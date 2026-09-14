@@ -113,7 +113,112 @@ document.getElementById("logout").onclick=()=>{
   employee=null;document.getElementById("actions").hidden=true;
   document.getElementById("who").hidden=true;
 };
-  
+ // ===============================
+// REPORTE DE HORAS
+// ===============================
+
+async function loadHoursReport(startDate, endDate, title) {
+
+  const message = document.getElementById("reportMessage");
+  const results = document.getElementById("reportResults");
+
+  message.textContent = "Cargando reporte...";
+  results.innerHTML = "";
+
+  try {
+
+    const rows = await api(
+      "rpc/get_hours_report",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          p_start_date: startDate,
+          p_end_date: endDate
+        })
+      }
+    );
+
+    let html = `
+      <h3>${title}</h3>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Fecha</th>
+            <th>Horas</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    rows.forEach(row => {
+
+      html += `
+        <tr>
+          <td>${row.employee_name}</td>
+          <td>${row.work_date}</td>
+          <td>${Number(row.total_hours).toFixed(2)}</td>
+        </tr>
+      `;
+
+    });
+
+    html += `
+        </tbody>
+      </table>
+    `;
+
+    results.innerHTML = html;
+    message.textContent = "Reporte cargado correctamente.";
+
+  } catch (error) {
+
+    message.textContent =
+      "Error: " + error.message;
+
+  }
+
+}
+
+// REPORTE DIARIO
+
+document.getElementById("dailyReport").onclick = async () => {
+
+  const today = new Date().toISOString().split("T")[0];
+
+  await loadHoursReport(
+    today,
+    today,
+    "Reporte diario — " + today
+  );
+
+};
+
+// REPORTE SEMANAL
+
+document.getElementById("weeklyReport").onclick = async () => {
+
+  const today = new Date();
+  const day = today.getDay();
+
+  const difference = day === 0 ? -6 : 1 - day;
+
+  today.setDate(today.getDate() + difference);
+
+  const startDate = today.toISOString().split("T")[0];
+
+  today.setDate(today.getDate() + 6);
+
+  const endDate = today.toISOString().split("T")[0];
+
+  await loadHoursReport(
+    startDate,
+    endDate,
+    "Reporte semanal"
+  );
+
+}; 
 testConnection();
 </script>
 </body>
