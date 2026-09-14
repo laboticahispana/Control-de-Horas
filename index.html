@@ -39,7 +39,23 @@
     </div>
     <div id="message" class="status" aria-live="polite"></div>
   </div>
+<div class="card" id="reports" hidden>
+  <h2>Reporte de horas</h2>
 
+  <div class="grid">
+    <button id="dailyReport">
+      📅 Reporte diario
+    </button>
+
+    <button id="weeklyReport" class="secondary">
+      📊 Reporte semanal
+    </button>
+  </div>
+
+  <div id="reportMessage" class="status"></div>
+
+  <div id="reportResults"></div>
+</div>
   <div class="card">
     <h2>Prueba de conexión</h2>
     <div id="connection" class="muted">Sin probar todavía.</div>
