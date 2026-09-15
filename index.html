@@ -78,6 +78,116 @@ async function api(path, options={}) {
   return text ? JSON.parse(text) : [];
 } 
   
+function localDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatHours(hours) {
+  return Number(hours || 0).toFixed(2);
+}
+
+function showReportTable(rows, title) {
+  const results = document.getElementById("reportResults");
+
+  if (!rows || rows.length === 0) {
+    results.innerHTML = "<p>No hay horas registradas en este período.</p>";
+    return;
+  }
+
+  let totalHours = 0;
+
+  let html = `
+    <h3>${title}</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Empleado</th>
+          <th>Fecha</th>
+          <th>Horas</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  rows.forEach(row => {
+    const hours = Number(row.total_hours || 0);
+    totalHours += hours;
+
+    html += `
+      <tr>
+        <td>${row.employee_name}</td>
+        <td>${row.work_date}</td>
+        <td>${formatHours(hours)}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+      </tbody>
+    </table>
+
+    <h3>Total de horas: ${formatHours(totalHours)}</h3>
+  `;
+
+  results.innerHTML = html;
+}
+
+async function loadHoursReport(start, end, title) {
+  const message = document.getElementById("reportMessage");
+
+  message.textContent = "Cargando reporte...";
+
+  try {
+    const rows = await api("rpc/get_hours_report", {
+      method: "POST",
+      body: JSON.stringify({
+        p_start: start,
+        p_end: end
+      })
+    });
+
+    showReportTable(rows, title);
+
+    message.textContent = "Reporte cargado correctamente.";
+  } catch (e) {
+    message.textContent = "Error al cargar reporte: " + e.message;
+  }
+}
+
+document.getElementById("dailyReport").onclick = () => {
+  const today = new Date();
+  const date = localDateString(today);
+
+  loadHoursReport(
+    date + "T00:00:00-04:00",
+    date + "T23:59:59-04:00",
+    "Reporte diario"
+  );
+};
+
+document.getElementById("weeklyReport").onclick = () => {
+  const today = new Date();
+
+  const day = today.getDay();
+  const difference = day === 0 ? -6 : 1 - day;
+
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + difference);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  loadHoursReport(
+    localDateString(monday) + "T00:00:00-04:00",
+    localDateString(sunday) + "T23:59:59-04:00",
+    "Reporte semanal"
+  );
+};
+
 async function testConnection(){
   try {
     const rows=await api("employees?select=id&limit=1");
