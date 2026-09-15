@@ -851,13 +851,15 @@ $("saveBtn").onclick = async()=>{
 
     }else{
 
-      await api(
-        "employees?id=eq."+editingId,
-        {
-          method:"PATCH",
-          body:JSON.stringify(body)
-        }
-      );
+  await api(
+  "rpc/deactivate_employee",
+  {
+    method: "POST",
+    body: JSON.stringify({
+      p_employee_id: employee.id
+    })
+  }
+);
 
       showMsg(
         "formMsg",
