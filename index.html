@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es">
 <head>
@@ -80,33 +79,6 @@
       margin-top: 12px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    td,
-    th {
-      padding: 9px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-    }
-
-    .report-table {
-      width: 100%;
-      overflow-wrap: anywhere;
-    }
-
-    .report-table th {
-      background: #f1f5f9;
-    }
-
-    #reportResults {
-      overflow-x: auto;
-      margin-top: 15px;
-    }
-
     @media (max-width: 400px) {
       .wrap {
         padding: 12px;
@@ -129,561 +101,337 @@
 
 <body>
 
-<div class="wrap">
+  <div class="wrap">
 
-  <!-- LOGIN -->
-  <div class="card">
+    <!-- LOGIN -->
+    <div class="card">
 
-    <h1>Control de Horas</h1>
+      <h1>Control de Horas</h1>
 
-    <div class="muted">
-      La Botica • Registro de trabajadores
+      <div class="muted">
+        La Botica • Registro de trabajadores
+      </div>
+
+      <input
+        id="pin"
+        type="password"
+        inputmode="numeric"
+        maxlength="8"
+        placeholder="Ingresa tu PIN"
+      >
+
+      <button id="login">
+        Entrar
+      </button>
+
+      <div id="who" class="status" hidden></div>
+
     </div>
 
-    <input
-      id="pin"
-      type="password"
-      inputmode="numeric"
-      maxlength="8"
-      placeholder="Ingresa tu PIN"
-    >
 
-    <button id="login">
-      Entrar
-    </button>
+    <!-- REGISTRAR MOVIMIENTOS -->
+    <div class="card" id="actions" hidden>
 
-    <div id="who" class="status" hidden></div>
+      <h2>Registrar movimiento</h2>
+
+      <div class="grid">
+
+        <button data-action="Entrada">
+          Entrada
+        </button>
+
+        <button data-action="Break" class="secondary">
+          Break
+        </button>
+
+        <button data-action="Lunch" class="secondary">
+          Lunch
+        </button>
+
+        <button data-action="Regreso" class="secondary">
+          Regreso
+        </button>
+
+        <button data-action="Salida" class="danger">
+          Salida
+        </button>
+
+        <button id="logout" class="secondary">
+          Cerrar sesión
+        </button>
+
+      </div>
+
+      <div id="message" class="status" aria-live="polite">
+        Selecciona una acción.
+      </div>
+
+    </div>
+
+
+    <!-- PRUEBA DE CONEXIÓN -->
+    <div class="card">
+
+      <h2>Prueba de conexión</h2>
+
+      <div id="connection" class="muted">
+        Sin probar todavía.
+      </div>
+
+    </div>
 
   </div>
 
 
-  <!-- REGISTRAR MOVIMIENTOS -->
-  <div class="card" id="actions" hidden>
+  <script>
+    // =====================================
+    // CONFIGURACIÓN SUPABASE
+    // =====================================
 
-    <h2>Registrar movimiento</h2>
+    const SUPABASE_URL =
+      "https://slqbboighwbyuxdaawyw.supabase.co";
 
-    <div class="grid">
+    const SUPABASE_KEY =
+      "sb_publishable_xgXidHkiZjr8_YFK3EMK8w_KybqBG0y";
 
-      <button data-action="Entrada">
-        Entrada
-      </button>
+    let employee = null;
 
-      <button data-action="Break" class="secondary">
-        Break
-      </button>
 
-      <button data-action="Lunch" class="secondary">
-        Lunch
-      </button>
+    // =====================================
+    // FUNCIÓN API
+    // =====================================
 
-      <button data-action="Regreso" class="secondary">
-        Regreso
-      </button>
+    async function api(path, options = {}) {
 
-      <button data-action="Salida" class="danger">
-        Salida
-      </button>
+      const headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": "Bearer " + SUPABASE_KEY,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation",
+        ...(options.headers || {})
+      };
 
-      <button id="logout" class="secondary">
-        Cerrar sesión
-      </button>
-
-    </div>
-
-    <div id="message" class="status" aria-live="polite">
-      Selecciona una acción.
-    </div>
-
-  </div>
-
-
-  <!-- PRUEBA DE CONEXIÓN -->
-  <div class="card">
-
-    <h2>Prueba de conexión</h2>
-
-    <div id="connection" class="muted">
-      Sin probar todavía.
-    </div>
-
-  </div>
-
-</div>
-
-
-<script>
-
-// =====================================
-// CONFIGURACIÓN SUPABASE
-// =====================================
-
-const SUPABASE_URL =
-  "https://slqbboighwbyuxdaawyw.supabase.co";
-
-const SUPABASE_KEY =
-  "sb_publishable_xgXidHkiZjr8_YFK3EMK8w_KybqBG0y";
-
-let employee = null;
-
-
-// =====================================
-// FUNCIÓN API
-// =====================================
-
-async function api(path, options = {}) {
-
-  const headers = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": "Bearer " + SUPABASE_KEY,
-    "Content-Type": "application/json",
-    "Prefer": "return=representation",
-    ...(options.headers || {})
-  };
-
-  const res = await fetch(
-    SUPABASE_URL + "/rest/v1/" + path,
-    {
-      ...options,
-      headers
-    }
-  );
-
-  const text = await res.text();
-
-  if (!res.ok) {
-    throw new Error(text || res.statusText);
-  }
-
-  return text ? JSON.parse(text) : [];
-
-}
-
-
-// =====================================
-// FECHA LOCAL
-// =====================================
-
-function localDateString(date) {
-
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-
-}
-
-
-// =====================================
-// FORMATO DE HORAS
-// =====================================
-
-function formatHours(hours) {
-
-  return Number(hours || 0).toFixed(2);
-
-}
-
-
-// =====================================
-// OBTENER OFFSET LOCAL
-// =====================================
-
-function getTimezoneOffset(date) {
-
-  const offset = -date.getTimezoneOffset();
-
-  const sign = offset >= 0 ? "+" : "-";
-
-  const absolute = Math.abs(offset);
-
-  const hours = String(
-    Math.floor(absolute / 60)
-  ).padStart(2, "0");
-
-  const minutes = String(
-    absolute % 60
-  ).padStart(2, "0");
-
-  return `${sign}${hours}:${minutes}`;
-
-}
-
-
-// =====================================
-// INICIO DEL DÍA LOCAL
-// =====================================
-
-function localStartOfDay(date) {
-
-  return localDateString(date)
-    + "T00:00:00"
-    + getTimezoneOffset(date);
-
-}
-
-
-// =====================================
-// FIN DEL DÍA LOCAL
-// =====================================
-
-function localEndOfDay(date) {
-
-  return localDateString(date)
-    + "T23:59:59"
-    + getTimezoneOffset(date);
-
-}
-
-
-// =====================================
-// TABLA DE REPORTES
-// =====================================
-
-function showReportTable(rows, title) {
-
-  const results =
-    document.getElementById("reportResults");
-
-  if (!rows || rows.length === 0) {
-
-    results.innerHTML =
-      "<p>No hay horas registradas en este período.</p>";
-
-    return;
-
-  }
-
-  let totalHours = 0;
-
-  let html = `
-    <h3>${title}</h3>
-
-    <table class="report-table">
-
-      <thead>
-        <tr>
-          <th>Empleado</th>
-          <th>Fecha</th>
-          <th>Horas</th>
-        </tr>
-      </thead>
-
-      <tbody>
-  `;
-
-  rows.forEach(row => {
-
-    const hours =
-      Number(row.total_hours || 0);
-
-    totalHours += hours;
-
-    html += `
-      <tr>
-        <td>${row.employee_name || ""}</td>
-        <td>${row.work_date || ""}</td>
-        <td>${formatHours(hours)}</td>
-      </tr>
-    `;
-
-  });
-
-  html += `
-      </tbody>
-
-    </table>
-
-    <h3>
-      Total de horas: ${formatHours(totalHours)}
-    </h3>
-  `;
-
-  results.innerHTML = html;
-
-}
-
-
-// =====================================
-// CARGAR REPORTE
-// =====================================
-
-async function loadHoursReport(
-  start,
-  end,
-  title
-) {
-
-  const message =
-    document.getElementById("reportMessage");
-
-  const results =
-    document.getElementById("reportResults");
-
-  message.textContent =
-    "Cargando reporte...";
-
-  results.innerHTML = "";
-
-  try {
-
-    const rows = await api(
-      "rpc/get_hours_report",
-      {
-        method: "POST",
-
-        body: JSON.stringify({
-
-          p_start: start,
-
-          p_end: end
-
-        })
-      }
-    );
-
-    showReportTable(rows, title);
-
-    message.textContent =
-      "Reporte cargado correctamente.";
-
-  } catch (error) {
-
-    console.error(
-      "Error al cargar reporte:",
-      error
-    );
-
-    message.textContent =
-      "Error al cargar reporte: "
-      + error.message;
-
-  }
-
-}
-
-
-// =====================================
-// PRUEBA DE CONEXIÓN
-// =====================================
-
-async function testConnection() {
-
-  try {
-
-    await api(
-      "employees?select=id&limit=1"
-    );
-
-    document.getElementById(
-      "connection"
-    ).textContent =
-      "Conexión correcta con Supabase.";
-
-  } catch (e) {
-
-    document.getElementById(
-      "connection"
-    ).textContent =
-      "Error de conexión: "
-      + e.message;
-
-  }
-
-}
-
-
-// =====================================
-// LOGIN
-// =====================================
-
-document.getElementById(
-  "login"
-).onclick = async () => {
-
-  const pin =
-    document.getElementById("pin")
-      .value.trim();
-
-  if (!pin) {
-
-    alert("Ingresa tu PIN.");
-
-    return;
-
-  }
-
-  try {
-
-    const rows = await api(
-
-      "employees?select=id,name"
-      + "&pin=eq."
-      + encodeURIComponent(pin)
-      + "&active=eq.true"
-      + "&limit=1"
-
-    );
-
-    if (!rows.length) {
-
-      alert("PIN incorrecto.");
-
-      return;
-
-    }
-
-    employee = rows[0];
-
-    document.getElementById(
-      "who"
-    ).hidden = false;
-
-    document.getElementById(
-      "who"
-    ).textContent =
-      "Empleado: " + employee.name;
-
-    document.getElementById(
-      "actions"
-    ).hidden = false;
-
-    document.getElementById(
-      "reports"
-    ).hidden = false;
-
-    document.getElementById(
-      "pin"
-    ).value = "";
-
-    document.getElementById(
-      "message"
-    ).textContent =
-      "Selecciona Entrada, Break, Lunch, Regreso o Salida.";
-
-    document.getElementById(
-      "reportMessage"
-    ).textContent =
-      "Selecciona un reporte.";
-
-    document.getElementById(
-      "reportResults"
-    ).innerHTML = "";
-
-  } catch (e) {
-
-    alert(
-      "No se pudo iniciar sesión: "
-      + e.message
-    );
-
-  }
-
-};
-
-
-// =====================================
-// REGISTRAR MOVIMIENTOS
-// =====================================
-
-document.querySelectorAll(
-  "[data-action]"
-).forEach(btn => {
-
-  btn.onclick = async () => {
-
-    if (!employee) return;
-
-    const action =
-      btn.dataset.action;
-
-    try {
-
-      await api(
-
-        "time_entries",
-
+      const res = await fetch(
+        SUPABASE_URL + "/rest/v1/" + path,
         {
-          method: "POST",
+          ...options,
+          headers
+        }
+      );
 
-          body: JSON.stringify({
+      const text = await res.text();
 
-            employee_id: employee.id,
+      if (!res.ok) {
+        throw new Error(text || res.statusText);
+      }
 
-            action: action
+      return text ? JSON.parse(text) : [];
+    }
 
-          })
+
+    // =====================================
+    // PRUEBA DE CONEXIÓN
+    // =====================================
+
+    async function testConnection() {
+
+      try {
+
+        await api(
+          "employees?select=id&limit=1"
+        );
+
+        document.getElementById(
+          "connection"
+        ).textContent =
+          "Conexión correcta con Supabase.";
+
+      } catch (e) {
+
+        document.getElementById(
+          "connection"
+        ).textContent =
+          "Error de conexión: " + e.message;
+
+      }
+
+    }
+
+
+    // =====================================
+    // LOGIN
+    // =====================================
+
+    document.getElementById(
+      "login"
+    ).onclick = async () => {
+
+      const pin =
+        document.getElementById("pin")
+          .value.trim();
+
+      if (!pin) {
+
+        alert("Ingresa tu PIN.");
+
+        return;
+      }
+
+      try {
+
+        const rows = await api(
+
+          "employees?select=id,name" +
+          "&pin=eq." +
+          encodeURIComponent(pin) +
+          "&active=eq.true" +
+          "&limit=1"
+
+        );
+
+        if (!rows.length) {
+
+          alert("PIN incorrecto.");
+
+          return;
+        }
+
+        employee = rows[0];
+
+        document.getElementById(
+          "who"
+        ).hidden = false;
+
+        document.getElementById(
+          "who"
+        ).textContent =
+          "Empleado: " + employee.name;
+
+        document.getElementById(
+          "actions"
+        ).hidden = false;
+
+        document.getElementById(
+          "pin"
+        ).value = "";
+
+        document.getElementById(
+          "message"
+        ).textContent =
+          "Selecciona Entrada, Break, Lunch, Regreso o Salida.";
+
+      } catch (e) {
+
+        alert(
+          "No se pudo iniciar sesión: " + e.message
+        );
+
+      }
+
+    };
+
+
+    // =====================================
+    // REGISTRAR MOVIMIENTOS
+    // =====================================
+
+    document.querySelectorAll(
+      "[data-action]"
+    ).forEach(btn => {
+
+      btn.onclick = async () => {
+
+        if (!employee) {
+
+          alert("Primero inicia sesión.");
+
+          return;
+        }
+
+        const action =
+          btn.dataset.action;
+
+        try {
+
+          await api(
+
+            "time_entries",
+
+            {
+              method: "POST",
+
+              body: JSON.stringify({
+
+                employee_id: employee.id,
+
+                action: action
+
+              })
+
+            }
+
+          );
+
+          document.getElementById(
+            "message"
+          ).textContent =
+            action + " registrado correctamente.";
+
+        } catch (e) {
+
+          document.getElementById(
+            "message"
+          ).textContent =
+            "Error: " + e.message;
 
         }
 
-      );
+      };
+
+    });
+
+
+    // =====================================
+    // CERRAR SESIÓN
+    // =====================================
+
+    document.getElementById(
+      "logout"
+    ).onclick = () => {
+
+      employee = null;
+
+      document.getElementById(
+        "actions"
+      ).hidden = true;
+
+      document.getElementById(
+        "who"
+      ).hidden = true;
+
+      document.getElementById(
+        "who"
+      ).textContent = "";
 
       document.getElementById(
         "message"
       ).textContent =
-        action + " registrado correctamente.";
-
-    } catch (e) {
+        "Selecciona una acción.";
 
       document.getElementById(
-        "message"
-      ).textContent =
-        "Error: " + e.message;
+        "pin"
+      ).value = "";
 
-    }
-
-  };
-
-});
+    };
 
 
-// =====================================
-// CERRAR SESIÓN
-// =====================================
+    // =====================================
+    // INICIAR PRUEBA DE CONEXIÓN
+    // =====================================
 
-document.getElementById(
-  "logout"
-).onclick = () => {
+    testConnection();
 
-  employee = null;
-
-  document.getElementById(
-    "actions"
-  ).hidden = true;
-
-  document.getElementById(
-    "reports"
-  ).hidden = true;
-
-  document.getElementById(
-    "who"
-  ).hidden = true;
-
-  document.getElementById(
-    "reportResults"
-  ).innerHTML = "";
-
-  document.getElementById(
-    "reportMessage"
-  ).textContent =
-    "Selecciona un reporte.";
-
-};
-
-
-// =====================================
-// INICIAR PRUEBA DE CONEXIÓN
-// =====================================
-
-testConnection();
-
-</script>
+  </script>
 
 </body>
 </html>
