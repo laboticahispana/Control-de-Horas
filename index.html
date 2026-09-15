@@ -76,7 +76,8 @@ async function api(path, options={}) {
   const text = await res.text();
   if(!res.ok) throw new Error(text || res.statusText);
   return text ? JSON.parse(text) : [];
-}
+} 
+  
 async function testConnection(){
   try {
     const rows=await api("employees?select=id&limit=1");
