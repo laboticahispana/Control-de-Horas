@@ -1,19 +1,29 @@
-
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Administración - La Botica</title>
+
 <style>
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
+
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;
   background:#f4f6f8;
   color:#172033;
 }
-.wrap{max-width:900px;margin:auto;padding:22px}
+
+.wrap{
+  max-width:1100px;
+  margin:auto;
+  padding:22px;
+}
+
 .card{
   background:white;
   border-radius:18px;
@@ -21,16 +31,34 @@ body{
   margin-bottom:18px;
   box-shadow:0 5px 22px #0001;
 }
-h1{margin:0 0 5px;font-size:28px}
-h2{margin-top:0}
-.muted{color:#667085}
-input,button,select{
+
+h1{
+  margin:0 0 5px;
+  font-size:28px;
+}
+
+h2{
+  margin-top:0;
+}
+
+h3{
+  margin-bottom:8px;
+}
+
+.muted{
+  color:#667085;
+}
+
+input,
+button,
+select{
   width:100%;
   padding:13px;
   border-radius:10px;
   border:1px solid #ccd3db;
   font:inherit;
 }
+
 button{
   background:#14532d;
   color:white;
@@ -38,137 +66,483 @@ button{
   font-weight:700;
   cursor:pointer;
 }
-button.secondary{background:#334155}
-button.danger{background:#b91c1c}
-button.small{width:auto;padding:9px 12px}
+
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+button.secondary{
+  background:#334155;
+}
+
+button.danger{
+  background:#b91c1c;
+}
+
+button.small{
+  width:auto;
+  padding:9px 12px;
+}
+
 .grid{
   display:grid;
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:10px;
 }
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.actions button{flex:1}
+
+.grid-three{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.actions button{
+  flex:1;
+}
+
 .status{
   padding:12px;
   border-radius:10px;
   background:#eef2f6;
   margin-top:12px;
 }
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{
-  text-align:left;
-  padding:10px 5px;
-  border-bottom:1px solid #e5e7eb;
+
+.summary{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0;
 }
-.hidden{display:none!important}
-@media(max-width:600px){
-  .wrap{padding:12px}
-  .card{padding:17px}
-  .grid{grid-template-columns:1fr}
-  table{font-size:12px}
+
+.summary-box{
+  background:#f1f5f9;
+  border-radius:14px;
+  padding:16px;
+}
+
+.summary-box strong{
+  display:block;
+  font-size:25px;
+  margin-top:5px;
+}
+
+.table-wrap{
+  overflow-x:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+th,
+td{
+  text-align:left;
+  padding:10px 7px;
+  border-bottom:1px solid #e5e7eb;
+  white-space:nowrap;
+}
+
+th{
+  background:#f1f5f9;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.report-controls{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  align-items:end;
+}
+
+label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+@media(max-width:700px){
+  .wrap{
+    padding:12px;
+  }
+
+  .card{
+    padding:17px;
+  }
+
+  .grid,
+  .grid-three,
+  .summary,
+  .report-controls{
+    grid-template-columns:1fr;
+  }
+
+  table{
+    font-size:12px;
+  }
+}
+
+@media print{
+  body{
+    background:white;
+  }
+
+  .no-print,
+  #loginCard,
+  #employeeCard,
+  #employeesCard,
+  #adminHeader{
+    display:none!important;
+  }
+
+  .wrap{
+    max-width:none;
+    padding:0;
+  }
+
+  .card{
+    box-shadow:none;
+    padding:0;
+  }
+
+  #app{
+    display:block!important;
+  }
+
+  #reportsCard{
+    display:block!important;
+  }
+
+  table{
+    font-size:11px;
+  }
 }
 </style>
 </head>
+
 <body>
+
 <div class="wrap">
 
-<div class="card" id="loginCard">
-  <h1>Administración</h1>
-  <div class="muted">La Botica Hispana · Control de Horas</div>
-  <br>
-  <label>PIN de administrador</label>
-  <input id="adminPin" type="password"
-         inputmode="numeric" placeholder="Ingresa tu PIN">
-  <br><br>
-  <button id="loginBtn">Entrar</button>
-  <div id="loginMsg" class="status"></div>
-</div>
+  <!-- LOGIN -->
+  <div class="card" id="loginCard">
 
-<div id="app" class="hidden">
+    <h1>Administración</h1>
 
-<div class="card">
-  <h1>Panel de administrador</h1>
-  <div class="muted">Gestiona los empleados de La Botica</div>
-  <br>
-  <div class="actions">
-    <button id="refreshBtn">Actualizar empleados</button>
-    <button id="logoutBtn" class="secondary">Cerrar sesión</button>
-  </div>
-</div>
+    <div class="muted">
+      La Botica Hispana · Control de Horas
+    </div>
 
-<div class="card">
-  <h2 id="formTitle">Agregar empleado</h2>
+    <br>
 
-  <label>Nombre completo</label>
-  <input id="name" placeholder="Nombre del empleado">
+    <label for="adminPin">
+      PIN de administrador
+    </label>
 
-  <br><br>
-  <label>PIN del empleado</label>
-  <input id="pin" type="text" inputmode="numeric"
-         placeholder="Ej. 1234">
+    <input
+      id="adminPin"
+      type="password"
+      inputmode="numeric"
+      placeholder="Ingresa tu PIN"
+    >
 
-  <br><br>
-  <label>Pago por hora ($)</label>
-  <input id="rate" type="number" min="0" step="0.01"
-         placeholder="18.00">
+    <br><br>
 
-  <br><br>
-  <div class="actions">
-    <button id="saveBtn">Guardar empleado</button>
-    <button id="cancelBtn" class="secondary hidden">
-      Cancelar edición
+    <button id="loginBtn">
+      Entrar
     </button>
+
+    <div id="loginMsg" class="status"></div>
+
   </div>
-  <div id="formMsg" class="status"></div>
+
+
+  <!-- APLICACIÓN -->
+  <div id="app" class="hidden">
+
+    <!-- ENCABEZADO -->
+    <div class="card no-print" id="adminHeader">
+
+      <h1>Panel de administrador</h1>
+
+      <div class="muted">
+        Gestiona empleados y revisa las horas trabajadas.
+      </div>
+
+      <br>
+
+      <div class="actions">
+
+        <button id="refreshBtn">
+          Actualizar empleados
+        </button>
+
+        <button id="logoutBtn" class="secondary">
+          Cerrar sesión
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- AGREGAR / EDITAR EMPLEADO -->
+    <div class="card no-print" id="employeeCard">
+
+      <h2 id="formTitle">
+        Agregar empleado
+      </h2>
+
+      <label for="name">
+        Nombre completo
+      </label>
+
+      <input
+        id="name"
+        placeholder="Nombre del empleado"
+      >
+
+      <br><br>
+
+      <label for="pin">
+        PIN del empleado
+      </label>
+
+      <input
+        id="pin"
+        type="text"
+        inputmode="numeric"
+        placeholder="Ej. 1234"
+      >
+
+      <br><br>
+
+      <label for="rate">
+        Pago por hora ($)
+      </label>
+
+      <input
+        id="rate"
+        type="number"
+        min="0"
+        step="0.01"
+        placeholder="18.00"
+      >
+
+      <br><br>
+
+      <div class="actions">
+
+        <button id="saveBtn">
+          Guardar empleado
+        </button>
+
+        <button
+          id="cancelBtn"
+          class="secondary hidden"
+        >
+          Cancelar edición
+        </button>
+
+      </div>
+
+      <div id="formMsg" class="status"></div>
+
+    </div>
+
+
+    <!-- EMPLEADOS -->
+    <div class="card no-print" id="employeesCard">
+
+      <h2>
+        Empleados registrados
+      </h2>
+
+      <div id="loading" class="muted">
+        Cargando...
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>PIN</th>
+              <th>Pago/h</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody id="employees"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+
+    <!-- REPORTES -->
+    <div class="card" id="reportsCard">
+
+      <div class="no-print">
+
+        <h2>
+          Reportes de horas
+        </h2>
+
+        <div class="muted">
+          Consulta las horas trabajadas y el pago estimado.
+        </div>
+
+        <br>
+
+        <div class="grid">
+
+          <button id="dailyReport">
+            📅 Reporte de hoy
+          </button>
+
+          <button
+            id="weeklyReport"
+            class="secondary"
+          >
+            📊 Reporte semanal
+          </button>
+
+        </div>
+
+        <br>
+
+        <h3>
+          Reporte personalizado
+        </h3>
+
+        <div class="report-controls">
+
+          <div>
+            <label for="startDate">
+              Desde
+            </label>
+
+            <input
+              id="startDate"
+              type="date"
+            >
+          </div>
+
+          <div>
+            <label for="endDate">
+              Hasta
+            </label>
+
+            <input
+              id="endDate"
+              type="date"
+            >
+          </div>
+
+          <div>
+            <label for="employeeFilter">
+              Empleado
+            </label>
+
+            <select id="employeeFilter">
+              <option value="">
+                Todos los empleados
+              </option>
+            </select>
+          </div>
+
+        </div>
+
+        <br>
+
+        <div class="actions">
+
+          <button id="customReport">
+            Buscar reporte
+          </button>
+
+          <button
+            id="printBtn"
+            class="secondary"
+          >
+            🖨️ Imprimir
+          </button>
+
+          <button
+            id="csvBtn"
+            class="secondary"
+          >
+            Descargar CSV
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div id="reportMessage" class="status">
+        Selecciona un reporte.
+      </div>
+
+      <div id="reportResults"></div>
+
+    </div>
+
+  </div>
+
 </div>
 
-<div class="card">
-  <h2>Empleados registrados</h2>
-  <div id="loading" class="muted">Cargando...</div>
-  <div style="overflow-x:auto">
-    <table>
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>PIN</th>
-          <th>Pago/h</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="employees"></tbody>
-    </table>
-  </div>
-</div>
-
-</div>
-</div>
 
 <script>
+
 const SUPABASE_URL =
   "https://slqbboighwbyuxdaawyw.supabase.co";
 
 const SUPABASE_KEY =
   "sb_publishable_xgXidHkiZjr8_YFK3EMK8w_KybqBG0y";
 
+
 /*
-  CAMBIA ESTE PIN antes de publicar.
-  Este acceso es una versión inicial.
+  CAMBIA ESTE PIN ANTES DE PUBLICAR.
 */
 const ADMIN_PIN = "020991";
 
+
 let editingId = null;
 let employees = [];
+let currentReportRows = [];
+let currentReportTitle = "";
+
 
 function $(id){
   return document.getElementById(id);
 }
 
+
 function showMsg(id,text){
   $(id).textContent = text;
 }
 
+
 async function api(path,options={}){
+
   const headers = {
     "apikey":SUPABASE_KEY,
     "Authorization":"Bearer "+SUPABASE_KEY,
@@ -179,7 +553,10 @@ async function api(path,options={}){
 
   const res = await fetch(
     SUPABASE_URL+"/rest/v1/"+path,
-    {...options,headers}
+    {
+      ...options,
+      headers
+    }
   );
 
   const text = await res.text();
@@ -191,160 +568,835 @@ async function api(path,options={}){
   return text ? JSON.parse(text) : [];
 }
 
+
+/* FECHAS */
+
+function localDateString(date){
+
+  const year = date.getFullYear();
+
+  const month = String(
+    date.getMonth()+1
+  ).padStart(2,"0");
+
+  const day = String(
+    date.getDate()
+  ).padStart(2,"0");
+
+  return `${year}-${month}-${day}`;
+}
+
+
+function getTimezoneOffset(date){
+
+  const offset = -date.getTimezoneOffset();
+
+  const sign = offset >= 0 ? "+" : "-";
+
+  const absolute = Math.abs(offset);
+
+  const hours = String(
+    Math.floor(absolute/60)
+  ).padStart(2,"0");
+
+  const minutes = String(
+    absolute%60
+  ).padStart(2,"0");
+
+  return `${sign}${hours}:${minutes}`;
+}
+
+
+function localStartOfDay(date){
+
+  return localDateString(date)
+    +"T00:00:00"
+    +getTimezoneOffset(date);
+}
+
+
+function localEndOfDay(date){
+
+  return localDateString(date)
+    +"T23:59:59"
+    +getTimezoneOffset(date);
+}
+
+
+function formatHours(hours){
+
+  return Number(hours||0).toFixed(2);
+}
+
+
+function formatMoney(amount){
+
+  return "$"+Number(amount||0).toFixed(2);
+}
+
+
+function escapeHtml(value){
+
+  return String(value??"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+
+/* LOGIN */
+
 $("loginBtn").onclick = ()=>{
+
   if($("adminPin").value === ADMIN_PIN){
+
     $("loginCard").classList.add("hidden");
+
     $("app").classList.remove("hidden");
+
     showMsg("loginMsg","");
+
     loadEmployees();
+
   }else{
-    showMsg("loginMsg","PIN de administrador incorrecto.");
+
+    showMsg(
+      "loginMsg",
+      "PIN de administrador incorrecto."
+    );
+
   }
+
 };
+
 
 $("logoutBtn").onclick = ()=>{
+
   $("app").classList.add("hidden");
+
   $("loginCard").classList.remove("hidden");
-  $("adminPin").value="";
+
+  $("adminPin").value = "";
+
 };
 
+
+/* EMPLEADOS */
+
 async function loadEmployees(){
-  $("loading").textContent="Cargando empleados...";
+
+  $("loading").textContent =
+    "Cargando empleados...";
+
   try{
+
     employees = await api(
       "employees?select=id,name,pin,hourly_rate,active&order=id"
     );
+
     renderEmployees();
-    $("loading").textContent="";
+
+    populateEmployeeFilter();
+
+    $("loading").textContent = "";
+
   }catch(e){
-    $("loading").textContent="Error: "+e.message;
+
+    $("loading").textContent =
+      "Error: "+e.message;
+
   }
+
 }
 
+
 function renderEmployees(){
-  $("employees").innerHTML="";
+
+  $("employees").innerHTML = "";
 
   employees.forEach(emp=>{
-    const tr=document.createElement("tr");
 
-    const name=document.createElement("td");
-    name.textContent=emp.name;
+    const tr = document.createElement("tr");
 
-    const pin=document.createElement("td");
-    pin.textContent=emp.pin;
+    const name = document.createElement("td");
+    name.textContent = emp.name;
 
-    const rate=document.createElement("td");
-    rate.textContent="$"+Number(emp.hourly_rate||0).toFixed(2);
+    const pin = document.createElement("td");
+    pin.textContent = emp.pin;
 
-    const status=document.createElement("td");
-    status.textContent=emp.active ? "Activo" : "Inactivo";
+    const rate = document.createElement("td");
+    rate.textContent =
+      formatMoney(emp.hourly_rate);
 
-    const actions=document.createElement("td");
-    const wrap=document.createElement("div");
-    wrap.className="actions";
+    const status = document.createElement("td");
+    status.textContent =
+      emp.active ? "Activo" : "Inactivo";
 
-    const edit=document.createElement("button");
-    edit.className="small secondary";
-    edit.textContent="Editar";
-    edit.onclick=()=>editEmployee(emp);
+    const actions = document.createElement("td");
 
-    const toggle=document.createElement("button");
-    toggle.className="small";
-    toggle.textContent=emp.active ? "Desactivar" : "Activar";
-    toggle.onclick=()=>toggleEmployee(emp);
+    const wrap = document.createElement("div");
+    wrap.className = "actions";
+
+    const edit = document.createElement("button");
+    edit.className = "small secondary";
+    edit.textContent = "Editar";
+    edit.onclick = ()=>editEmployee(emp);
+
+    const toggle = document.createElement("button");
+    toggle.className = "small";
+    toggle.textContent =
+      emp.active ? "Desactivar" : "Activar";
+
+    toggle.onclick = ()=>toggleEmployee(emp);
 
     wrap.append(edit,toggle);
     actions.append(wrap);
-    tr.append(name,pin,rate,status,actions);
+
+    tr.append(
+      name,
+      pin,
+      rate,
+      status,
+      actions
+    );
+
     $("employees").append(tr);
+
   });
+
 }
 
-$("saveBtn").onclick=async()=>{
-  const name=$("name").value.trim();
-  const pin=$("pin").value.trim();
-  const rate=$("rate").value.trim();
 
-  if(!name||!pin||rate===""){
-    showMsg("formMsg","Completa nombre, PIN y pago por hora.");
+function populateEmployeeFilter(){
+
+  const select = $("employeeFilter");
+
+  select.innerHTML = `
+    <option value="">
+      Todos los empleados
+    </option>
+  `;
+
+  employees.forEach(emp=>{
+
+    const option = document.createElement("option");
+
+    option.value = emp.id;
+
+    option.textContent = emp.name;
+
+    select.append(option);
+
+  });
+
+}
+
+
+$("saveBtn").onclick = async()=>{
+
+  const name = $("name").value.trim();
+  const pin = $("pin").value.trim();
+  const rate = $("rate").value.trim();
+
+  if(!name || !pin || rate===""){
+
+    showMsg(
+      "formMsg",
+      "Completa nombre, PIN y pago por hora."
+    );
+
     return;
+
+  }
+
+  if(Number(rate)<0){
+
+    showMsg(
+      "formMsg",
+      "El pago por hora no puede ser negativo."
+    );
+
+    return;
+
   }
 
   try{
-    $("saveBtn").disabled=true;
 
-    const body={
+    $("saveBtn").disabled = true;
+
+    const body = {
       name,
       pin,
       hourly_rate:Number(rate)
     };
 
     if(editingId===null){
-      body.active=true;
-      await api("employees",{
-        method:"POST",
-        body:JSON.stringify(body)
-      });
-      showMsg("formMsg","Empleado agregado correctamente.");
+
+      body.active = true;
+
+      await api(
+        "employees",
+        {
+          method:"POST",
+          body:JSON.stringify(body)
+        }
+      );
+
+      showMsg(
+        "formMsg",
+        "Empleado agregado correctamente."
+      );
+
     }else{
-      await api("employees?id=eq."+editingId,{
-        method:"PATCH",
-        body:JSON.stringify(body)
-      });
-      showMsg("formMsg","Empleado actualizado correctamente.");
+
+      await api(
+        "employees?id=eq."+editingId,
+        {
+          method:"PATCH",
+          body:JSON.stringify(body)
+        }
+      );
+
+      showMsg(
+        "formMsg",
+        "Empleado actualizado correctamente."
+      );
+
     }
 
     clearForm();
+
     await loadEmployees();
 
   }catch(e){
-    showMsg("formMsg","Error: "+e.message);
+
+    showMsg(
+      "formMsg",
+      "Error: "+e.message
+    );
+
   }finally{
-    $("saveBtn").disabled=false;
+
+    $("saveBtn").disabled = false;
+
   }
+
 };
 
+
 function editEmployee(emp){
-  editingId=emp.id;
-  $("formTitle").textContent="Editar empleado";
-  $("name").value=emp.name||"";
-  $("pin").value=emp.pin||"";
-  $("rate").value=emp.hourly_rate||0;
-  $("saveBtn").textContent="Guardar cambios";
+
+  editingId = emp.id;
+
+  $("formTitle").textContent =
+    "Editar empleado";
+
+  $("name").value = emp.name||"";
+  $("pin").value = emp.pin||"";
+  $("rate").value = emp.hourly_rate||0;
+
+  $("saveBtn").textContent =
+    "Guardar cambios";
+
   $("cancelBtn").classList.remove("hidden");
-  window.scrollTo({top:0,behavior:"smooth"});
+
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
+
 }
 
-async function toggleEmployee(emp){
-  const action=emp.active ? "desactivar" : "activar";
 
-  if(!confirm("¿Quieres "+action+" a "+emp.name+"?")){
+async function toggleEmployee(emp){
+
+  const action =
+    emp.active ? "desactivar" : "activar";
+
+  if(!confirm(
+    "¿Quieres "+action+" a "+emp.name+"?"
+  )){
     return;
   }
 
   try{
-    await api("employees?id=eq."+emp.id,{
-      method:"PATCH",
-      body:JSON.stringify({active:!emp.active})
-    });
+
+    await api(
+      "employees?id=eq."+emp.id,
+      {
+        method:"PATCH",
+        body:JSON.stringify({
+          active:!emp.active
+        })
+      }
+    );
+
     await loadEmployees();
+
   }catch(e){
+
     alert("Error: "+e.message);
+
   }
+
 }
+
 
 function clearForm(){
-  editingId=null;
-  $("formTitle").textContent="Agregar empleado";
-  $("name").value="";
-  $("pin").value="";
-  $("rate").value="";
-  $("saveBtn").textContent="Guardar empleado";
+
+  editingId = null;
+
+  $("formTitle").textContent =
+    "Agregar empleado";
+
+  $("name").value = "";
+  $("pin").value = "";
+  $("rate").value = "";
+
+  $("saveBtn").textContent =
+    "Guardar empleado";
+
   $("cancelBtn").classList.add("hidden");
+
 }
 
-$("cancelBtn").onclick=clearForm;
-$("refreshBtn").onclick=loadEmployees;
+
+$("cancelBtn").onclick = clearForm;
+
+$("refreshBtn").onclick = loadEmployees;
+
+
+/* REPORTES */
+
+function getEmployeeRate(employeeId){
+
+  const emp = employees.find(
+    item => String(item.id) === String(employeeId)
+  );
+
+  return emp ? Number(emp.hourly_rate||0) : 0;
+}
+
+
+function getEmployeeName(employeeId){
+
+  const emp = employees.find(
+    item => String(item.id) === String(employeeId)
+  );
+
+  return emp ? emp.name : "";
+}
+
+
+function showReportTable(rows,title){
+
+  currentReportRows = rows||[];
+  currentReportTitle = title;
+
+  const results = $("reportResults");
+
+  if(!rows || rows.length===0){
+
+    results.innerHTML = `
+      <h3>${escapeHtml(title)}</h3>
+      <p>No hay horas registradas en este período.</p>
+    `;
+
+    return;
+
+  }
+
+  let totalHours = 0;
+  let totalPay = 0;
+
+  let html = `
+    <h3>${escapeHtml(title)}</h3>
+
+    <div class="summary">
+
+      <div class="summary-box">
+        <div class="muted">Total de horas</div>
+        <strong id="totalHours">0.00</strong>
+      </div>
+
+      <div class="summary-box">
+        <div class="muted">Pago estimado</div>
+        <strong id="totalPay">$0.00</strong>
+      </div>
+
+      <div class="summary-box">
+        <div class="muted">Registros</div>
+        <strong>${rows.length}</strong>
+      </div>
+
+    </div>
+
+    <div class="table-wrap">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Fecha</th>
+            <th>Horas</th>
+            <th>Pago/h</th>
+            <th>Pago estimado</th>
+          </tr>
+        </thead>
+
+        <tbody>
+  `;
+
+  rows.forEach(row=>{
+
+    const hours =
+      Number(row.total_hours||0);
+
+    const employeeId =
+      row.employee_id || row.id_employee;
+
+    const rate =
+      row.hourly_rate !== undefined
+        ? Number(row.hourly_rate||0)
+        : getEmployeeRate(employeeId);
+
+    const employeeName =
+      row.employee_name
+      || getEmployeeName(employeeId)
+      || "Empleado";
+
+    const pay = hours*rate;
+
+    totalHours += hours;
+    totalPay += pay;
+
+    html += `
+      <tr>
+        <td>${escapeHtml(employeeName)}</td>
+        <td>${escapeHtml(row.work_date||"")}</td>
+        <td>${formatHours(hours)}</td>
+        <td>${formatMoney(rate)}</td>
+        <td>${formatMoney(pay)}</td>
+      </tr>
+    `;
+
+  });
+
+  html += `
+        </tbody>
+
+      </table>
+
+    </div>
+
+    <h3>
+      Total de horas:
+      ${formatHours(totalHours)}
+    </h3>
+
+    <h3>
+      Total estimado de nómina:
+      ${formatMoney(totalPay)}
+    </h3>
+  `;
+
+  results.innerHTML = html;
+
+  $("totalHours").textContent =
+    formatHours(totalHours);
+
+  $("totalPay").textContent =
+    formatMoney(totalPay);
+
+}
+
+
+async function loadHoursReport(
+  start,
+  end,
+  title
+){
+
+  const message = $("reportMessage");
+
+  const results = $("reportResults");
+
+  message.textContent =
+    "Cargando reporte...";
+
+  results.innerHTML = "";
+
+  try{
+
+    let path =
+      "rpc/get_hours_report";
+
+    const rows = await api(
+      path,
+      {
+        method:"POST",
+        body:JSON.stringify({
+          p_start:start,
+          p_end:end
+        })
+      }
+    );
+
+    let filteredRows = rows||[];
+
+    const selectedEmployee =
+      $("employeeFilter").value;
+
+    if(selectedEmployee){
+
+      filteredRows = filteredRows.filter(row=>{
+
+        const id =
+          row.employee_id || row.id_employee;
+
+        return String(id) === String(selectedEmployee);
+
+      });
+
+    }
+
+    showReportTable(
+      filteredRows,
+      title
+    );
+
+    message.textContent =
+      "Reporte cargado correctamente.";
+
+  }catch(error){
+
+    console.error(
+      "Error al cargar reporte:",
+      error
+    );
+
+    message.textContent =
+      "Error al cargar reporte: "
+      +error.message;
+
+  }
+
+}
+
+
+/* REPORTE DIARIO */
+
+$("dailyReport").onclick = async()=>{
+
+  const today = new Date();
+
+  const date = localDateString(today);
+
+  $("startDate").value = date;
+  $("endDate").value = date;
+
+  await loadHoursReport(
+    localStartOfDay(today),
+    localEndOfDay(today),
+    "Reporte diario — "+date
+  );
+
+};
+
+
+/* REPORTE SEMANAL */
+
+$("weeklyReport").onclick = async()=>{
+
+  const today = new Date();
+
+  const day = today.getDay();
+
+  const difference =
+    day===0 ? -6 : 1-day;
+
+  const monday = new Date(today);
+
+  monday.setDate(
+    today.getDate()+difference
+  );
+
+  const sunday = new Date(monday);
+
+  sunday.setDate(
+    monday.getDate()+6
+  );
+
+  $("startDate").value =
+    localDateString(monday);
+
+  $("endDate").value =
+    localDateString(sunday);
+
+  await loadHoursReport(
+    localStartOfDay(monday),
+    localEndOfDay(sunday),
+    "Reporte semanal — "
+    +localDateString(monday)
+    +" al "
+    +localDateString(sunday)
+  );
+
+};
+
+
+/* REPORTE PERSONALIZADO */
+
+$("customReport").onclick = async()=>{
+
+  const startValue =
+    $("startDate").value;
+
+  const endValue =
+    $("endDate").value;
+
+  if(!startValue || !endValue){
+
+    $("reportMessage").textContent =
+      "Selecciona una fecha inicial y una fecha final.";
+
+    return;
+
+  }
+
+  if(startValue>endValue){
+
+    $("reportMessage").textContent =
+      "La fecha inicial no puede ser mayor que la fecha final.";
+
+    return;
+
+  }
+
+  const startDate =
+    new Date(startValue+"T12:00:00");
+
+  const endDate =
+    new Date(endValue+"T12:00:00");
+
+  await loadHoursReport(
+    localStartOfDay(startDate),
+    localEndOfDay(endDate),
+    "Reporte del "
+    +startValue
+    +" al "
+    +endValue
+  );
+
+};
+
+
+/* IMPRIMIR */
+
+$("printBtn").onclick = ()=>{
+
+  if(!$("reportResults").innerHTML.trim()){
+
+    alert("Primero carga un reporte.");
+
+    return;
+
+  }
+
+  window.print();
+
+};
+
+
+/* DESCARGAR CSV */
+
+$("csvBtn").onclick = ()=>{
+
+  if(!currentReportRows.length){
+
+    alert("Primero carga un reporte.");
+
+    return;
+
+  }
+
+  const lines = [];
+
+  lines.push([
+    "Empleado",
+    "Fecha",
+    "Horas",
+    "Pago por hora",
+    "Pago estimado"
+  ].join(","));
+
+  currentReportRows.forEach(row=>{
+
+    const employeeId =
+      row.employee_id || row.id_employee;
+
+    const name =
+      row.employee_name
+      || getEmployeeName(employeeId)
+      || "Empleado";
+
+    const hours =
+      Number(row.total_hours||0);
+
+    const rate =
+      row.hourly_rate !== undefined
+        ? Number(row.hourly_rate||0)
+        : getEmployeeRate(employeeId);
+
+    const pay = hours*rate;
+
+    lines.push([
+      `"${String(name).replaceAll('"','""')}"`,
+      `"${String(row.work_date||"")}"`,
+      hours.toFixed(2),
+      rate.toFixed(2),
+      pay.toFixed(2)
+    ].join(","));
+
+  });
+
+  const csv = "\uFEFF"+lines.join("\n");
+
+  const blob = new Blob(
+    [csv],
+    {
+      type:"text/csv;charset=utf-8;"
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+
+  link.href = url;
+
+  link.download =
+    "reporte-horas-"+localDateString(new Date())+".csv";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  link.remove();
+
+  URL.revokeObjectURL(url);
+
+};
+
+
+/* CARGA INICIAL DE EMPLEADOS */
+
+loadEmployees();
+
 </script>
+
 </body>
 </html>
