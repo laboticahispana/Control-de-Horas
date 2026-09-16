@@ -852,14 +852,12 @@ $("saveBtn").onclick = async()=>{
     }else{
 
   await api(
-  "rpc/deactivate_employee",
-  {
-    method: "POST",
-    body: JSON.stringify({
-      p_employee_id: editingId
-    })
-  }
-);
+    "employees?id=eq."+editingId,
+    {
+      method:"PATCH",
+      body:JSON.stringify(body)
+    }
+  );
 
       showMsg(
         "formMsg",
@@ -1397,6 +1395,9 @@ $("csvBtn").onclick = ()=>{
 /* CARGA INICIAL DE EMPLEADOS */
 
 loadEmployees();
+
+</script>
+
 <!-- VISTAS ADICIONALES DE REPORTES -->
 <script>
 (() => {
