@@ -1397,7 +1397,471 @@ $("csvBtn").onclick = ()=>{
 /* CARGA INICIAL DE EMPLEADOS */
 
 loadEmployees();
+<!-- VISTAS ADICIONALES DE REPORTES -->
+<script>
+(() => {
+  const reportResults = document.getElementById("reportResults");
 
+  document.head.insertAdjacentHTML("beforeend", `
+    <style>
+      .report-view-tabs{
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        margin:16px 0;
+      }
+
+      .report-view-tabs button{
+        width:auto;
+      }
+
+      .report-view-tabs button.active{
+        background:#14532d;
+      }
+
+      .report-view{
+        display:none;
+      }
+
+      .report-view.active{
+        display:block;
+      }
+
+      .daily-hours-table th:not(:first-child),
+      .daily-hours-table td:not(:first-child){
+        text-align:center;
+      }
+    </style>
+  `);
+
+  function reportEmployeeId(row){
+    return row.employee_id || row.id_employee;
+  }
+
+  function reportDates(start,end){
+    const dates = [];
+    const cursor = new Date(start+"T12:00:00");
+    const last = new Date(end+"T12:00:00");
+
+    while(cursor<=last){
+      dates.push(localDateString(cursor));
+      cursor.setDate(cursor.getDate()+1);
+    }
+
+    return dates;
+  }
+
+  function reportTime(value){
+    if(!value){
+      return "—";
+    }
+
+    return new Date(value).toLocaleTimeString(
+      "es-US",
+      {
+        hour:"2-digit",
+        minute:"2-digit"
+      }
+    );
+  }
+
+  function dailyHoursView(rows,start,end,selectedEmployee){
+    const dates = reportDates(start,end);
+
+    const reportEmployees = employees.filter(employee =>
+      !selectedEmployee
+      || String(employee.id) === String(selectedEmployee)
+    );
+
+    if(!reportEmployees.length){
+      return "<p>No hay empleados disponibles para este reporte.</p>";
+    }
+
+    const hoursByEmployeeAndDate = new Map();
+
+    rows.forEach(row => {
+      const key =
+        String(reportEmployeeId(row))
+        +"|"
+        +(row.work_date || "");
+
+      hoursByEmployeeAndDate.set(
+        key,
+        Number(row.total_hours || 0)
+      );
+    });
+
+    return `
+      <h3>Horas por empleado y día</h3>
+
+      <div class="table-wrap">
+        <table class="daily-hours-table">
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              ${dates.map(date =>
+                `<th>${escapeHtml(date.slice(5))}</th>`
+              ).join("")}
+              <th>Total</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${reportEmployees.map(employee => {
+              let total = 0;
+
+              const cells = dates.map(date => {
+                const hours =
+                  hoursByEmployeeAndDate.get(
+                    String(employee.id)+"|"+date
+                  ) || 0;
+
+                total += hours;
+
+                return `
+                  <td>
+                    ${hours ? formatHours(hours) : "—"}
+                  </td>
+                `;
+              }).join("");
+
+              return `
+                <tr>
+                  <td>${escapeHtml(employee.name)}</td>
+                  ${cells}
+                  <td><strong>${formatHours(total)}</strong></td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function entryExitView(entries,selectedEmployee){
+    const details = new Map();
+
+    entries.forEach(entry => {
+      if(
+        selectedEmployee
+        && String(entry.employee_id) !== String(selectedEmployee)
+      ){
+        return;
+      }
+
+      const workDate =
+        localDateString(new Date(entry.created_at));
+
+      const key =
+        String(entry.employee_id)
+        +"|"
+        +workDate;
+
+      const detail = details.get(key) || {
+        employee_id:entry.employee_id,
+        work_date:workDate,
+        entry:null,
+        exit:null
+      };
+
+      if(entry.action === "Entrada" && !detail.entry){
+        detail.entry = entry.created_at;
+      }
+
+      if(entry.action === "Salida"){
+        detail.exit = entry.created_at;
+      }
+
+      details.set(key,detail);
+    });
+
+    const rows = [...details.values()].sort((a,b) =>
+      a.work_date.localeCompare(b.work_date)
+      || getEmployeeName(a.employee_id).localeCompare(
+        getEmployeeName(b.employee_id)
+      )
+    );
+
+    if(!rows.length){
+      return "<p>No hay entradas o salidas registradas en este período.</p>";
+    }
+
+    return `
+      <h3>Detalle de entrada y salida</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Empleado</th>
+              <th>Fecha</th>
+              <th>Entrada</th>
+              <th>Salida</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${rows.map(row => `
+              <tr>
+                <td>
+                  ${escapeHtml(
+                    getEmployeeName(row.employee_id) || "Empleado"
+                  )}
+                </td>
+                <td>${escapeHtml(row.work_date)}</td>
+                <td>${reportTime(row.entry)}</td>
+                <td>${reportTime(row.exit)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function showReportViews(title,summaryHtml,dailyHtml,entryExitHtml){
+    reportResults.innerHTML = `
+      <h3>${escapeHtml(title)}</h3>
+
+      <div class="report-view-tabs no-print">
+        <button
+          type="button"
+          class="secondary active"
+          data-view="summary"
+        >
+          Resumen
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          data-view="daily"
+        >
+          Horas por día
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          data-view="entryExit"
+        >
+          Entradas y salidas
+        </button>
+      </div>
+
+      <section id="reportSummaryView" class="report-view active">
+        ${summaryHtml}
+      </section>
+
+      <section id="reportDailyView" class="report-view">
+        ${dailyHtml}
+      </section>
+
+      <section id="reportEntryExitView" class="report-view">
+        ${entryExitHtml}
+      </section>
+    `;
+
+    reportResults.querySelectorAll("[data-view]").forEach(button => {
+      button.onclick = () => {
+        const selectedView = button.dataset.view;
+
+        reportResults.querySelectorAll("[data-view]").forEach(item => {
+          item.classList.toggle("active",item === button);
+        });
+
+        document.getElementById("reportSummaryView").classList.toggle(
+          "active",
+          selectedView === "summary"
+        );
+
+        document.getElementById("reportDailyView").classList.toggle(
+          "active",
+          selectedView === "daily"
+        );
+
+        document.getElementById("reportEntryExitView").classList.toggle(
+          "active",
+          selectedView === "entryExit"
+        );
+      };
+    });
+  }
+
+  window.showReportTable = function(
+    rows,
+    title,
+    start,
+    end,
+    timeEntries = [],
+    selectedEmployee = ""
+  ){
+    currentReportRows = rows || [];
+    currentReportTitle = title;
+
+    const dailyHtml = dailyHoursView(
+      rows || [],
+      start,
+      end,
+      selectedEmployee
+    );
+
+    const entryExitHtml = entryExitView(
+      timeEntries,
+      selectedEmployee
+    );
+
+    if(!rows || !rows.length){
+      showReportViews(
+        title,
+        "<p>No hay horas registradas en este período.</p>",
+        dailyHtml,
+        entryExitHtml
+      );
+
+      return;
+    }
+
+    let totalHours = 0;
+    let totalPay = 0;
+
+    const reportRows = rows.map(row => {
+      const hours = Number(row.total_hours || 0);
+      const employeeId = reportEmployeeId(row);
+      const rate = row.hourly_rate !== undefined
+        ? Number(row.hourly_rate || 0)
+        : getEmployeeRate(employeeId);
+
+      const employeeName =
+        row.employee_name
+        || getEmployeeName(employeeId)
+        || "Empleado";
+
+      const pay = hours * rate;
+
+      totalHours += hours;
+      totalPay += pay;
+
+      return `
+        <tr>
+          <td>${escapeHtml(employeeName)}</td>
+          <td>${escapeHtml(row.work_date || "")}</td>
+          <td>${formatHours(hours)}</td>
+          <td>${formatMoney(rate)}</td>
+          <td>${formatMoney(pay)}</td>
+        </tr>
+      `;
+    }).join("");
+
+    showReportViews(
+      title,
+      `
+        <div class="summary">
+          <div class="summary-box">
+            <div class="muted">Total de horas</div>
+            <strong>${formatHours(totalHours)}</strong>
+          </div>
+
+          <div class="summary-box">
+            <div class="muted">Pago estimado</div>
+            <strong>${formatMoney(totalPay)}</strong>
+          </div>
+
+          <div class="summary-box">
+            <div class="muted">Registros</div>
+            <strong>${rows.length}</strong>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Fecha</th>
+                <th>Horas</th>
+                <th>Pago/h</th>
+                <th>Pago estimado</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${reportRows}
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Total de horas: ${formatHours(totalHours)}</h3>
+        <h3>Total estimado de nómina: ${formatMoney(totalPay)}</h3>
+      `,
+      dailyHtml,
+      entryExitHtml
+    );
+  };
+
+  window.loadHoursReport = async function(start,end,title){
+    const message = document.getElementById("reportMessage");
+
+    message.textContent = "Cargando reporte...";
+    reportResults.innerHTML = "";
+
+    try{
+      const rows = await api(
+        "rpc/get_hours_report",
+        {
+          method:"POST",
+          body:JSON.stringify({
+            p_start:start,
+            p_end:end
+          })
+        }
+      );
+
+      let timeEntries = [];
+
+      try{
+        timeEntries = await api(
+          "time_entries?select=employee_id,action,created_at"
+          +"&created_at=gte."+encodeURIComponent(start)
+          +"&created_at=lte."+encodeURIComponent(end)
+          +"&order=created_at.asc"
+        );
+      }catch(entryError){
+        console.warn(
+          "No se pudieron cargar entradas y salidas:",
+          entryError
+        );
+      }
+
+      const selectedEmployee =
+        document.getElementById("employeeFilter").value;
+
+      const filteredRows = (rows || []).filter(row =>
+        !selectedEmployee
+        || String(reportEmployeeId(row))
+          === String(selectedEmployee)
+      );
+
+      window.showReportTable(
+        filteredRows,
+        title,
+        start.slice(0,10),
+        end.slice(0,10),
+        timeEntries,
+        selectedEmployee
+      );
+
+      message.textContent = "Reporte cargado correctamente.";
+
+    }catch(error){
+      message.textContent =
+        "Error al cargar reporte: "
+        +error.message;
+    }
+  };
+})();
+</script>
 </script>
 
 </body>
