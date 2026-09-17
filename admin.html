@@ -1383,8 +1383,7 @@ $("csvBtn").onclick = ()=>{
 
   });
 
-  const csv = "\uFEFF"+lines.join("
-");
+  const csv = "\uFEFF"+lines.join("\n");
 
   const blob = new Blob(
     [csv],
@@ -1416,6 +1415,7 @@ $("csvBtn").onclick = ()=>{
 /* CARGA INICIAL DE EMPLEADOS */
 
 loadEmployees();
+</script>
 
 <!-- VISTAS ADICIONALES DE REPORTES -->
 <script>
@@ -2007,8 +2007,6 @@ loadEmployees();
   $("cancelCorrectionBtn").onclick = clearCorrectionForm;
   $("correctionDate").value = correctionToday();
 })();
-</script>
-
 </script>
 </body>
 </html>
