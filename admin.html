@@ -1928,11 +1928,11 @@ loadEmployees();
       const start = localStartOfDay(new Date(date+"T12:00:00"));
       const end = localEndOfDay(new Date(date+"T12:00:00"));
       const entries = await api(
-        "time_entries?select=id,employee_id,action,recorded_at,created_at"
+        "time_entries?select=id,employee_id,action,created_at"
         +"&employee_id=eq."+encodeURIComponent(employeeId)
-        +"&recorded_at=gte."+encodeURIComponent(start)
-        +"&recorded_at=lte."+encodeURIComponent(end)
-        +"&order=recorded_at.asc"
+        +"&created_at=gte."+encodeURIComponent(start)
+        +"&created_at=lte."+encodeURIComponent(end)
+        +"&order=created_at.asc"
       );
       if(!entries.length){
         $("correctionEntries").innerHTML = "<p>No hay registros para ese día.</p>";
@@ -1941,7 +1941,7 @@ loadEmployees();
       $("correctionEntries").innerHTML = `
         <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Acción</th><th>Editar</th></tr></thead><tbody>
         ${entries.map(entry => `
-          <tr><td>${escapeHtml(new Date(entry.recorded_at || entry.created_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>
+          <tr><td>${escapeHtml(new Date(entry.created_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>
           <td>${escapeHtml(entry.action)}</td><td><button class="small secondary" data-edit-correction="${entry.id}">Editar</button></td></tr>`).join("")}
         </tbody></table></div>`;
       $("correctionEntries").querySelectorAll("[data-edit-correction]").forEach(btn => {
@@ -1956,7 +1956,7 @@ loadEmployees();
   function editCorrectionEntry(id, entries){
     const entry = entries.find(item => String(item.id) === String(id));
     if(!entry) return;
-    const dateValue = new Date(entry.recorded_at || entry.created_at);
+    const dateValue = new Date(entry.created_at);
     correctionEditingId = entry.id;
     $("correctionEmployee").value = entry.employee_id;
     $("correctionDate").value = localDateString(dateValue);
@@ -1977,7 +1977,7 @@ loadEmployees();
     }
     const employee = employees.find(emp => String(emp.id) === String(employeeId));
     const recordedAt = new Date(date+"T"+time+":00").toISOString();
-    const body = {employee_id:Number(employeeId), action, recorded_at:recordedAt};
+    const body = {employee_id:Number(employeeId), action, created_at:recordedAt};
     try{
       $("saveCorrectionBtn").disabled = true;
       if(correctionEditingId === null){
