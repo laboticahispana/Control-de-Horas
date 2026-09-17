@@ -1928,7 +1928,7 @@ loadEmployees();
       const start = localStartOfDay(new Date(date+"T12:00:00"));
       const end = localEndOfDay(new Date(date+"T12:00:00"));
       const entries = await api(
-        "time_entries?select=id,employee_id,empleado,action,recorded_at,created_at"
+        "time_entries?select=id,employee_id,action,recorded_at,created_at"
         +"&employee_id=eq."+encodeURIComponent(employeeId)
         +"&recorded_at=gte."+encodeURIComponent(start)
         +"&recorded_at=lte."+encodeURIComponent(end)
@@ -1977,7 +1977,7 @@ loadEmployees();
     }
     const employee = employees.find(emp => String(emp.id) === String(employeeId));
     const recordedAt = new Date(date+"T"+time+":00").toISOString();
-    const body = {employee_id:Number(employeeId), empleado:employee ? employee.name : "", action, recorded_at:recordedAt};
+    const body = {employee_id:Number(employeeId), action, recorded_at:recordedAt};
     try{
       $("saveCorrectionBtn").disabled = true;
       if(correctionEditingId === null){
