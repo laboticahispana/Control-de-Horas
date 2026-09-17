@@ -1975,17 +1975,36 @@ loadEmployees();
       $("correctionMessage").textContent = "Completa todos los campos.";
       return;
     }
-    const employee = employees.find(emp => String(emp.id) === String(employeeId));
     const recordedAt = new Date(date+"T"+time+":00").toISOString();
     const body = {employee_id:Number(employeeId), action, created_at:recordedAt};
     try{
       $("saveCorrectionBtn").disabled = true;
-      if(correctionEditingId === null){
-        await api("time_entries",{method:"POST",body:JSON.stringify(body)});
-        $("correctionMessage").textContent = "Registro agregado correctamente.";
-      }else{
+      if(correctionEditingId !== null){
         await api("time_entries?id=eq."+encodeURIComponent(correctionEditingId),{method:"PATCH",body:JSON.stringify(body)});
         $("correctionMessage").textContent = "Registro actualizado correctamente.";
+      }else{
+        // Si ya existe una Entrada o Salida para ese empleado y día,
+        // actualizarla en lugar de crear un registro duplicado.
+        const start = localStartOfDay(new Date(date+"T12:00:00"));
+        const end = localEndOfDay(new Date(date+"T12:00:00"));
+        const existing = await api(
+          "time_entries?select=id,employee_id,action,created_at"
+          +"&employee_id=eq."+encodeURIComponent(employeeId)
+          +"&action=eq."+encodeURIComponent(action)
+          +"&created_at=gte."+encodeURIComponent(start)
+          +"&created_at=lte."+encodeURIComponent(end)
+          +"&order=created_at.asc"
+        );
+        if(existing.length){
+          const target = action === "Salida"
+            ? existing[existing.length-1]
+            : existing[0];
+          await api("time_entries?id=eq."+encodeURIComponent(target.id),{method:"PATCH",body:JSON.stringify(body)});
+          $("correctionMessage").textContent = "Registro existente actualizado correctamente.";
+        }else{
+          await api("time_entries",{method:"POST",body:JSON.stringify(body)});
+          $("correctionMessage").textContent = "Registro agregado correctamente.";
+        }
       }
       await loadCorrectionEntries();
       clearCorrectionForm();
