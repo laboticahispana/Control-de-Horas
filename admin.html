@@ -854,7 +854,6 @@ $("saveBtn").onclick = async()=>{
     };
 
     if(editingId===null){
-
       body.active = true;
 
       await api(
@@ -872,15 +871,13 @@ $("saveBtn").onclick = async()=>{
 
     }else{
 
-  await api(
-  "rpc/deactivate_employee",
-  {
-    method: "POST",
-    body: JSON.stringify({
-      p_employee_id: editingId
-    })
-  }
-);
+      await api(
+        "employees?id=eq."+encodeURIComponent(editingId),
+        {
+          method:"PATCH",
+          body:JSON.stringify(body)
+        }
+      );
 
       showMsg(
         "formMsg",
@@ -1386,7 +1383,8 @@ $("csvBtn").onclick = ()=>{
 
   });
 
-  const csv = "\uFEFF"+lines.join("\n");
+  const csv = "\uFEFF"+lines.join("
+");
 
   const blob = new Blob(
     [csv],
@@ -1418,7 +1416,7 @@ $("csvBtn").onclick = ()=>{
 /* CARGA INICIAL DE EMPLEADOS */
 
 loadEmployees();
-  <script>
+
 <!-- VISTAS ADICIONALES DE REPORTES -->
 <script>
 (() => {
@@ -1884,6 +1882,133 @@ loadEmployees();
   };
 })();
 </script>
-\n\n<script>\n(() => {\n  let correctionEditingId = null;\n\n  function correctionToday(){\n    return localDateString(new Date());\n  }\n\n  function populateCorrectionEmployees(){\n    const select = $("correctionEmployee");\n    if(!select) return;\n    const current = select.value;\n    select.innerHTML = '<option value="">Selecciona un empleado</option>';\n    employees.forEach(emp => {\n      const option = document.createElement("option");\n      option.value = emp.id;\n      option.textContent = emp.name;\n      select.append(option);\n    });\n    if(current) select.value = current;\n  }\n\n  function clearCorrectionForm(){\n    correctionEditingId = null;\n    $("correctionEmployee").value = "";\n    $("correctionDate").value = correctionToday();\n    $("correctionTime").value = "";\n    $("correctionAction").value = "Entrada";\n    $("saveCorrectionBtn").textContent = "Guardar corrección";\n    $("correctionMessage").textContent = "Selecciona un empleado, fecha, hora y acción.";\n  }\n\n  async function loadCorrectionEntries(){\n    const employeeId = $("correctionEmployee").value;\n    const date = $("correctionDate").value;\n    if(!employeeId || !date){\n      $("correctionMessage").textContent = "Selecciona empleado y fecha.";\n      return;\n    }\n    try{\n      $("correctionEntries").innerHTML = "Cargando registros...";\n      const start = localStartOfDay(new Date(date+"T12:00:00"));\n      const end = localEndOfDay(new Date(date+"T12:00:00"));\n      const entries = await api(\n        "time_entries?select=id,employee_id,empleado,action,recorded_at,created_at"\n        +"&employee_id=eq."+encodeURIComponent(employeeId)\n        +"&recorded_at=gte."+encodeURIComponent(start)\n        +"&recorded_at=lte."+encodeURIComponent(end)\n        +"&order=recorded_at.asc"\n      );\n      if(!entries.length){\n        $("correctionEntries").innerHTML = "<p>No hay registros para ese día.</p>";\n        return;\n      }\n      $("correctionEntries").innerHTML = `\n        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Acción</th><th>Editar</th></tr></thead><tbody>\n        ${entries.map(entry => `\n          <tr><td>${escapeHtml(new Date(entry.recorded_at || entry.created_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>\n          <td>${escapeHtml(entry.action)}</td><td><button class="small secondary" data-edit-correction="${entry.id}">Editar</button></td></tr>`).join("")}\n        </tbody></table></div>`;\n      $("correctionEntries").querySelectorAll("[data-edit-correction]").forEach(btn => {\n        btn.addEventListener("click", () => editCorrectionEntry(btn.dataset.editCorrection, entries));\n      });\n    }catch(e){\n      $("correctionEntries").innerHTML = "";\n      $("correctionMessage").textContent = "Error: "+e.message;\n    }\n  }\n\n  function editCorrectionEntry(id, entries){\n    const entry = entries.find(item => String(item.id) === String(id));\n    if(!entry) return;\n    const dateValue = new Date(entry.recorded_at || entry.created_at);\n    correctionEditingId = entry.id;\n    $("correctionEmployee").value = entry.employee_id;\n    $("correctionDate").value = localDateString(dateValue);\n    $("correctionTime").value = String(dateValue.getHours()).padStart(2,"0")+":"+String(dateValue.getMinutes()).padStart(2,"0");\n    $("correctionAction").value = entry.action;\n    $("saveCorrectionBtn").textContent = "Guardar cambios";\n    $("correctionMessage").textContent = "Editando registro #"+entry.id;\n  }\n\n  async function saveCorrection(){\n    const employeeId = $("correctionEmployee").value;\n    const date = $("correctionDate").value;\n    const time = $("correctionTime").value;\n    const action = $("correctionAction").value;\n    if(!employeeId || !date || !time || !action){\n      $("correctionMessage").textContent = "Completa todos los campos.";\n      return;\n    }\n    const employee = employees.find(emp => String(emp.id) === String(employeeId));\n    const recordedAt = new Date(date+"T"+time+":00").toISOString();\n    const body = {employee_id:Number(employeeId), empleado:employee ? employee.name : "", action, recorded_at:recordedAt};\n    try{\n      $("saveCorrectionBtn").disabled = true;\n      if(correctionEditingId === null){\n        await api("time_entries",{method:"POST",body:JSON.stringify(body)});\n        $("correctionMessage").textContent = "Registro agregado correctamente.";\n      }else{\n        await api("time_entries?id=eq."+encodeURIComponent(correctionEditingId),{method:"PATCH",body:JSON.stringify(body)});\n        $("correctionMessage").textContent = "Registro actualizado correctamente.";\n      }\n      await loadCorrectionEntries();\n      clearCorrectionForm();\n    }catch(e){\n      $("correctionMessage").textContent = "Error al guardar: "+e.message;\n    }finally{\n      $("saveCorrectionBtn").disabled = false;\n    }\n  }\n\n  const originalLoadEmployees = loadEmployees;\n  loadEmployees = async function(){\n    await originalLoadEmployees();\n    populateCorrectionEmployees();\n  };\n\n  $("saveCorrectionBtn").onclick = saveCorrection;\n  $("loadCorrectionEntriesBtn").onclick = loadCorrectionEntries;\n  $("cancelCorrectionBtn").onclick = clearCorrectionForm;\n  $("correctionDate").value = correctionToday();\n})();\n</script>\n
+
+
+<script>
+(() => {
+  let correctionEditingId = null;
+
+  function correctionToday(){
+    return localDateString(new Date());
+  }
+
+  function populateCorrectionEmployees(){
+    const select = $("correctionEmployee");
+    if(!select) return;
+    const current = select.value;
+    select.innerHTML = '<option value="">Selecciona un empleado</option>';
+    employees.forEach(emp => {
+      const option = document.createElement("option");
+      option.value = emp.id;
+      option.textContent = emp.name;
+      select.append(option);
+    });
+    if(current) select.value = current;
+  }
+
+  function clearCorrectionForm(){
+    correctionEditingId = null;
+    $("correctionEmployee").value = "";
+    $("correctionDate").value = correctionToday();
+    $("correctionTime").value = "";
+    $("correctionAction").value = "Entrada";
+    $("saveCorrectionBtn").textContent = "Guardar corrección";
+    $("correctionMessage").textContent = "Selecciona un empleado, fecha, hora y acción.";
+  }
+
+  async function loadCorrectionEntries(){
+    const employeeId = $("correctionEmployee").value;
+    const date = $("correctionDate").value;
+    if(!employeeId || !date){
+      $("correctionMessage").textContent = "Selecciona empleado y fecha.";
+      return;
+    }
+    try{
+      $("correctionEntries").innerHTML = "Cargando registros...";
+      const start = localStartOfDay(new Date(date+"T12:00:00"));
+      const end = localEndOfDay(new Date(date+"T12:00:00"));
+      const entries = await api(
+        "time_entries?select=id,employee_id,empleado,action,recorded_at,created_at"
+        +"&employee_id=eq."+encodeURIComponent(employeeId)
+        +"&recorded_at=gte."+encodeURIComponent(start)
+        +"&recorded_at=lte."+encodeURIComponent(end)
+        +"&order=recorded_at.asc"
+      );
+      if(!entries.length){
+        $("correctionEntries").innerHTML = "<p>No hay registros para ese día.</p>";
+        return;
+      }
+      $("correctionEntries").innerHTML = `
+        <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Acción</th><th>Editar</th></tr></thead><tbody>
+        ${entries.map(entry => `
+          <tr><td>${escapeHtml(new Date(entry.recorded_at || entry.created_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>
+          <td>${escapeHtml(entry.action)}</td><td><button class="small secondary" data-edit-correction="${entry.id}">Editar</button></td></tr>`).join("")}
+        </tbody></table></div>`;
+      $("correctionEntries").querySelectorAll("[data-edit-correction]").forEach(btn => {
+        btn.addEventListener("click", () => editCorrectionEntry(btn.dataset.editCorrection, entries));
+      });
+    }catch(e){
+      $("correctionEntries").innerHTML = "";
+      $("correctionMessage").textContent = "Error: "+e.message;
+    }
+  }
+
+  function editCorrectionEntry(id, entries){
+    const entry = entries.find(item => String(item.id) === String(id));
+    if(!entry) return;
+    const dateValue = new Date(entry.recorded_at || entry.created_at);
+    correctionEditingId = entry.id;
+    $("correctionEmployee").value = entry.employee_id;
+    $("correctionDate").value = localDateString(dateValue);
+    $("correctionTime").value = String(dateValue.getHours()).padStart(2,"0")+":"+String(dateValue.getMinutes()).padStart(2,"0");
+    $("correctionAction").value = entry.action;
+    $("saveCorrectionBtn").textContent = "Guardar cambios";
+    $("correctionMessage").textContent = "Editando registro #"+entry.id;
+  }
+
+  async function saveCorrection(){
+    const employeeId = $("correctionEmployee").value;
+    const date = $("correctionDate").value;
+    const time = $("correctionTime").value;
+    const action = $("correctionAction").value;
+    if(!employeeId || !date || !time || !action){
+      $("correctionMessage").textContent = "Completa todos los campos.";
+      return;
+    }
+    const employee = employees.find(emp => String(emp.id) === String(employeeId));
+    const recordedAt = new Date(date+"T"+time+":00").toISOString();
+    const body = {employee_id:Number(employeeId), empleado:employee ? employee.name : "", action, recorded_at:recordedAt};
+    try{
+      $("saveCorrectionBtn").disabled = true;
+      if(correctionEditingId === null){
+        await api("time_entries",{method:"POST",body:JSON.stringify(body)});
+        $("correctionMessage").textContent = "Registro agregado correctamente.";
+      }else{
+        await api("time_entries?id=eq."+encodeURIComponent(correctionEditingId),{method:"PATCH",body:JSON.stringify(body)});
+        $("correctionMessage").textContent = "Registro actualizado correctamente.";
+      }
+      await loadCorrectionEntries();
+      clearCorrectionForm();
+    }catch(e){
+      $("correctionMessage").textContent = "Error al guardar: "+e.message;
+    }finally{
+      $("saveCorrectionBtn").disabled = false;
+    }
+  }
+
+  const originalLoadEmployees = loadEmployees;
+  loadEmployees = async function(){
+    await originalLoadEmployees();
+    populateCorrectionEmployees();
+  };
+
+  $("saveCorrectionBtn").onclick = saveCorrection;
+  $("loadCorrectionEntriesBtn").onclick = loadCorrectionEntries;
+  $("cancelCorrectionBtn").onclick = clearCorrectionForm;
+  $("correctionDate").value = correctionToday();
+})();
+</script>
+
+</script>
 </body>
 </html>
