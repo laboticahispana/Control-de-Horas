@@ -228,6 +228,68 @@ label{
     font-size:11px;
   }
 }
+
+.admin-nav{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:18px;
+}
+.admin-nav button{
+  background:#334155;
+  min-height:52px;
+  border-radius:14px;
+  font-size:15px;
+}
+.admin-nav button.active{
+  background:#14532d;
+}
+.admin-section{
+  display:none;
+}
+.admin-section.active{
+  display:block;
+}
+.dashboard-card{
+  text-align:center;
+  padding:34px 24px;
+}
+.dashboard-icon{
+  width:70px;
+  height:70px;
+  margin:0 auto 16px;
+  display:grid;
+  place-items:center;
+  border-radius:20px;
+  background:#14532d;
+  color:white;
+  font-size:32px;
+}
+.dashboard-card h2{
+  margin-bottom:8px;
+}
+.quick-actions{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin-top:24px;
+}
+.quick-actions button{
+  min-height:58px;
+}
+@media(max-width:700px){
+  .admin-nav{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .admin-nav button{
+    min-height:48px;
+    font-size:14px;
+  }
+  .quick-actions{
+    grid-template-columns:1fr;
+  }
+}
+
 </style>
 </head>
 
@@ -297,7 +359,27 @@ label{
     </div>
 
 
+
+    <div class="admin-nav no-print" id="adminNav">
+      <button type="button" data-section="dashboard" class="active">🏠 Inicio</button>
+      <button type="button" data-section="employeesSection">👥 Empleados</button>
+      <button type="button" data-section="reportsSection">📊 Reportes</button>
+      <button type="button" data-section="correctionsSection">🕐 Correcciones</button>
+    </div>
+
+    <div class="card dashboard-card no-print admin-section active" id="dashboardSection">
+      <div class="dashboard-icon">✓</div>
+      <h2>Panel de administración</h2>
+      <div class="muted">Selecciona una sección para administrar La Botica Hispana.</div>
+      <div class="quick-actions">
+        <button type="button" data-section="employeesSection">👥 Gestionar empleados</button>
+        <button type="button" data-section="reportsSection">📊 Ver reportes</button>
+        <button type="button" data-section="correctionsSection">🕐 Corregir horas</button>
+      </div>
+    </div>
+
     <!-- AGREGAR / EDITAR EMPLEADO -->
+    <div class="admin-section" id="employeesSection">
     <div class="card no-print" id="employeeCard">
 
       <h2 id="formTitle">
@@ -394,9 +476,11 @@ label{
       </div>
 
     </div>
+    </div>
 
 
     <!-- REPORTES -->
+    <div class="admin-section" id="reportsSection">
     <div class="card" id="reportsCard">
 
       <div class="no-print">
@@ -504,8 +588,10 @@ label{
       <div id="reportResults"></div>
 
     </div>
+    </div>
 
     <!-- CORRECCIÓN DE HORAS -->
+    <div class="admin-section" id="correctionsSection">
     <div class="card no-print" id="timeCorrectionCard">
       <h2>Corregir / agregar horas</h2>
       <div class="muted">Usa esta sección cuando un empleado olvidó marcar Entrada o Salida, o necesita corregir una de esas acciones.</div>
@@ -524,6 +610,7 @@ label{
       <br>
       <button id="loadCorrectionEntriesBtn" class="secondary" type="button">Ver registros del día</button>
       <div id="correctionEntries"></div>
+    </div>
     </div>
 
   </div>
@@ -555,6 +642,32 @@ let currentReportTitle = "";
 function $(id){
   return document.getElementById(id);
 }
+
+
+/* NAVEGACIÓN DEL PANEL */
+function showAdminSection(sectionId){
+  document.querySelectorAll(".admin-section").forEach(section=>{
+    section.classList.toggle("active", section.id===sectionId);
+  });
+
+  document.querySelectorAll("#adminNav [data-section]").forEach(button=>{
+    button.classList.toggle("active", button.dataset.section===sectionId);
+  });
+
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+document.querySelectorAll("[data-section]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    const section=button.dataset.section;
+    if(section==="dashboard"){
+      showAdminSection("dashboardSection");
+    }else{
+      showAdminSection(section);
+    }
+  });
+});
+
 
 
 function showMsg(id,text){
@@ -666,6 +779,7 @@ $("loginBtn").onclick = ()=>{
     showMsg("loginMsg","");
 
     loadEmployees();
+    showAdminSection("dashboardSection");
 
   }else{
 
