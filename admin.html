@@ -592,55 +592,41 @@ async function api(path,options={}){
 
 /* FECHAS */
 
+const APP_TIMEZONE = "America/New_York";
+
 function localDateString(date){
-
-  const year = date.getFullYear();
-
-  const month = String(
-    date.getMonth()+1
-  ).padStart(2,"0");
-
-  const day = String(
-    date.getDate()
-  ).padStart(2,"0");
-
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: APP_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }
 
-
-function getTimezoneOffset(date){
-
-  const offset = -date.getTimezoneOffset();
-
-  const sign = offset >= 0 ? "+" : "-";
-
-  const absolute = Math.abs(offset);
-
-  const hours = String(
-    Math.floor(absolute/60)
-  ).padStart(2,"0");
-
-  const minutes = String(
-    absolute%60
-  ).padStart(2,"0");
-
-  return `${sign}${hours}:${minutes}`;
+function timezoneOffsetForNewYork(date){
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: APP_TIMEZONE,
+    timeZoneName: "longOffset"
+  }).formatToParts(date);
+  const offset = parts.find(part => part.type === "timeZoneName")?.value || "GMT-04:00";
+  return offset.replace("GMT", "");
 }
-
 
 function localStartOfDay(date){
-
-  return localDateString(date)
-    +"T00:00:00"
-    +getTimezoneOffset(date);
+  return localDateString(date) + "T00:00:00" + timezoneOffsetForNewYork(date);
 }
 
-
 function localEndOfDay(date){
+  return localDateString(date) + "T23:59:59" + timezoneOffsetForNewYork(date);
+}
 
-  return localDateString(date)
-    +"T23:59:59"
-    +getTimezoneOffset(date);
+function formatNYTime(value){
+  if(!value) return "—";
+  return new Date(value).toLocaleTimeString("es-US", {
+    timeZone: APP_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 }
 
 
@@ -1560,83 +1546,106 @@ loadEmployees();
   }
 
   function entryExitView(entries,selectedEmployee){
-    const details = new Map();
+    const rows = [];
+    const anomalies = [];
+    const grouped = new Map();
 
     entries.forEach(entry => {
-      if(
-        selectedEmployee
-        && String(entry.employee_id) !== String(selectedEmployee)
-      ){
-        return;
-      }
-
-      const workDate =
-        localDateString(new Date(entry.created_at));
-
-      const key =
-        String(entry.employee_id)
-        +"|"
-        +workDate;
-
-      const detail = details.get(key) || {
-        employee_id:entry.employee_id,
-        work_date:workDate,
-        entry:null,
-        exit:null
-      };
-
-      if(entry.action === "Entrada" && !detail.entry){
-        detail.entry = entry.created_at;
-      }
-
-      if(entry.action === "Salida"){
-        detail.exit = entry.created_at;
-      }
-
-      details.set(key,detail);
+      if(selectedEmployee && String(entry.employee_id) !== String(selectedEmployee)) return;
+      const workDate = localDateString(new Date(entry.recorded_at));
+      const key = String(entry.employee_id) + "|" + workDate;
+      if(!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(entry);
     });
 
-    const rows = [...details.values()].sort((a,b) =>
+    grouped.forEach((dayEntries) => {
+      dayEntries.sort((a,b) =>
+        new Date(a.recorded_at) - new Date(b.recorded_at)
+        || Number(a.id || 0) - Number(b.id || 0)
+      );
+
+      const employeeId = dayEntries[0].employee_id;
+      const workDate = localDateString(new Date(dayEntries[0].recorded_at));
+      let pendingEntry = null;
+
+      dayEntries.forEach(entry => {
+        if(entry.action === "Entrada"){
+          if(pendingEntry){
+            anomalies.push({employee_id:employeeId,work_date:workDate,type:"Entrada duplicada",at:entry.recorded_at});
+          }else{
+            pendingEntry = entry;
+          }
+          return;
+        }
+
+        if(entry.action === "Salida"){
+          if(pendingEntry && new Date(entry.recorded_at) > new Date(pendingEntry.recorded_at)){
+            rows.push({
+              employee_id:employeeId,
+              work_date:workDate,
+              entry:pendingEntry.recorded_at,
+              exit:entry.recorded_at
+            });
+            pendingEntry = null;
+          }else if(pendingEntry){
+            anomalies.push({employee_id:employeeId,work_date:workDate,type:"Salida inválida",at:entry.recorded_at});
+          }else{
+            anomalies.push({employee_id:employeeId,work_date:workDate,type:"Salida sin entrada",at:entry.recorded_at});
+          }
+        }
+      });
+
+      if(pendingEntry){
+        anomalies.push({employee_id:employeeId,work_date:workDate,type:"Entrada sin salida",at:pendingEntry.recorded_at});
+      }
+    });
+
+    rows.sort((a,b) =>
       a.work_date.localeCompare(b.work_date)
-      || getEmployeeName(a.employee_id).localeCompare(
-        getEmployeeName(b.employee_id)
-      )
+      || getEmployeeName(a.employee_id).localeCompare(getEmployeeName(b.employee_id))
+      || new Date(a.entry) - new Date(b.entry)
     );
 
-    if(!rows.length){
+    if(!rows.length && !anomalies.length){
       return "<p>No hay entradas o salidas registradas en este período.</p>";
     }
 
     return `
       <h3>Detalle de entrada y salida</h3>
-
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr>
-              <th>Empleado</th>
-              <th>Fecha</th>
-              <th>Entrada</th>
-              <th>Salida</th>
-            </tr>
-          </thead>
-
+          <thead><tr><th>Empleado</th><th>Fecha</th><th>Entrada</th><th>Salida</th><th>Horas</th></tr></thead>
           <tbody>
             ${rows.map(row => `
               <tr>
-                <td>
-                  ${escapeHtml(
-                    getEmployeeName(row.employee_id) || "Empleado"
-                  )}
-                </td>
+                <td>${escapeHtml(getEmployeeName(row.employee_id) || "Empleado")}</td>
                 <td>${escapeHtml(row.work_date)}</td>
-                <td>${reportTime(row.entry)}</td>
-                <td>${reportTime(row.exit)}</td>
+                <td>${formatNYTime(row.entry)}</td>
+                <td>${formatNYTime(row.exit)}</td>
+                <td>${formatHours((new Date(row.exit)-new Date(row.entry))/3600000)}</td>
               </tr>
             `).join("")}
           </tbody>
         </table>
       </div>
+      ${anomalies.length ? `
+        <h3>Anomalías detectadas</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Empleado</th><th>Fecha</th><th>Tipo</th><th>Hora</th></tr></thead>
+            <tbody>
+              ${anomalies.map(item => `
+                <tr>
+                  <td>${escapeHtml(getEmployeeName(item.employee_id) || "Empleado")}</td>
+                  <td>${escapeHtml(item.work_date)}</td>
+                  <td>${escapeHtml(item.type)}</td>
+                  <td>${formatNYTime(item.at)}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      ` : ""}
     `;
   }
 
@@ -1842,10 +1851,10 @@ loadEmployees();
 
       try{
         timeEntries = await api(
-          "time_entries?select=employee_id,action,created_at"
-          +"&created_at=gte."+encodeURIComponent(start)
-          +"&created_at=lte."+encodeURIComponent(end)
-          +"&order=created_at.asc"
+          "time_entries?select=employee_id,action,recorded_at"
+          +"&recorded_at=gte."+encodeURIComponent(start)
+          +"&recorded_at=lte."+encodeURIComponent(end)
+          +"&order=recorded_at.asc"
         );
       }catch(entryError){
         console.warn(
@@ -1928,11 +1937,11 @@ loadEmployees();
       const start = localStartOfDay(new Date(date+"T12:00:00"));
       const end = localEndOfDay(new Date(date+"T12:00:00"));
       const entries = await api(
-        "time_entries?select=id,employee_id,action,created_at"
+        "time_entries?select=id,employee_id,action,recorded_at"
         +"&employee_id=eq."+encodeURIComponent(employeeId)
-        +"&created_at=gte."+encodeURIComponent(start)
-        +"&created_at=lte."+encodeURIComponent(end)
-        +"&order=created_at.asc"
+        +"&recorded_at=gte."+encodeURIComponent(start)
+        +"&recorded_at=lte."+encodeURIComponent(end)
+        +"&order=recorded_at.asc"
       );
       if(!entries.length){
         $("correctionEntries").innerHTML = "<p>No hay registros para ese día.</p>";
@@ -1941,7 +1950,7 @@ loadEmployees();
       $("correctionEntries").innerHTML = `
         <div class="table-wrap"><table><thead><tr><th>Hora</th><th>Acción</th><th>Editar</th></tr></thead><tbody>
         ${entries.map(entry => `
-          <tr><td>${escapeHtml(new Date(entry.created_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>
+          <tr><td>${escapeHtml(new Date(entry.recorded_at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"}))}</td>
           <td>${escapeHtml(entry.action)}</td><td><button class="small secondary" data-edit-correction="${entry.id}">Editar</button></td></tr>`).join("")}
         </tbody></table></div>`;
       $("correctionEntries").querySelectorAll("[data-edit-correction]").forEach(btn => {
@@ -1956,7 +1965,7 @@ loadEmployees();
   function editCorrectionEntry(id, entries){
     const entry = entries.find(item => String(item.id) === String(id));
     if(!entry) return;
-    const dateValue = new Date(entry.created_at);
+    const dateValue = new Date(entry.recorded_at);
     correctionEditingId = entry.id;
     $("correctionEmployee").value = entry.employee_id;
     $("correctionDate").value = localDateString(dateValue);
@@ -1976,7 +1985,7 @@ loadEmployees();
       return;
     }
     const recordedAt = new Date(date+"T"+time+":00").toISOString();
-    const body = {employee_id:Number(employeeId), action, created_at:recordedAt};
+    const body = {employee_id:Number(employeeId), action, recorded_at:recordedAt};
     try{
       $("saveCorrectionBtn").disabled = true;
       if(correctionEditingId !== null){
@@ -1988,12 +1997,12 @@ loadEmployees();
         const start = localStartOfDay(new Date(date+"T12:00:00"));
         const end = localEndOfDay(new Date(date+"T12:00:00"));
         const existing = await api(
-          "time_entries?select=id,employee_id,action,created_at"
+          "time_entries?select=id,employee_id,action,recorded_at"
           +"&employee_id=eq."+encodeURIComponent(employeeId)
           +"&action=eq."+encodeURIComponent(action)
-          +"&created_at=gte."+encodeURIComponent(start)
-          +"&created_at=lte."+encodeURIComponent(end)
-          +"&order=created_at.asc"
+          +"&recorded_at=gte."+encodeURIComponent(start)
+          +"&recorded_at=lte."+encodeURIComponent(end)
+          +"&order=recorded_at.asc"
         );
         if(existing.length){
           const target = action === "Salida"
