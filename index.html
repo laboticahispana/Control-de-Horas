@@ -50,6 +50,49 @@
       margin: 12px 0;
     }
 
+    /* Teclado numérico integrado para el PIN */
+    #pin {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 8px;
+      cursor: default;
+      background: #f8fafc;
+    }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 4px 0 14px;
+    }
+
+    .pin-key {
+      min-height: 58px;
+      padding: 12px;
+      font-size: 22px;
+      border-radius: 14px;
+      background: #334155;
+      box-shadow: 0 2px 5px #0002;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .pin-key:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    .pin-key.action {
+      background: #64748b;
+      font-size: 20px;
+    }
+
+    .pin-key.enter {
+      background: #14532d;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -115,10 +158,28 @@
       <input
         id="pin"
         type="password"
-        inputmode="numeric"
+        inputmode="none"
         maxlength="8"
         placeholder="Ingresa tu PIN"
+        readonly
+        autocomplete="off"
+        aria-label="PIN"
       >
+
+      <div class="pin-pad" aria-label="Teclado numérico">
+        <button type="button" class="pin-key" data-pin="1">1</button>
+        <button type="button" class="pin-key" data-pin="2">2</button>
+        <button type="button" class="pin-key" data-pin="3">3</button>
+        <button type="button" class="pin-key" data-pin="4">4</button>
+        <button type="button" class="pin-key" data-pin="5">5</button>
+        <button type="button" class="pin-key" data-pin="6">6</button>
+        <button type="button" class="pin-key" data-pin="7">7</button>
+        <button type="button" class="pin-key" data-pin="8">8</button>
+        <button type="button" class="pin-key" data-pin="9">9</button>
+        <button type="button" class="pin-key action" id="pin-clear">C</button>
+        <button type="button" class="pin-key" data-pin="0">0</button>
+        <button type="button" class="pin-key action" id="pin-backspace">⌫</button>
+      </div>
 
       <button id="login">
         Entrar
@@ -247,6 +308,28 @@
 
 
     // =====================================
+    // TECLADO NUMÉRICO DEL PIN
+    // =====================================
+
+    const pinInput = document.getElementById("pin");
+
+    document.querySelectorAll("[data-pin]").forEach(btn => {
+      btn.onclick = () => {
+        if (pinInput.value.length >= 8) return;
+        pinInput.value += btn.dataset.pin;
+      };
+    });
+
+    document.getElementById("pin-clear").onclick = () => {
+      pinInput.value = "";
+    };
+
+    document.getElementById("pin-backspace").onclick = () => {
+      pinInput.value = pinInput.value.slice(0, -1);
+    };
+
+
+    // =====================================
     // LOGIN
     // =====================================
 
@@ -299,9 +382,7 @@
           "actions"
         ).hidden = false;
 
-        document.getElementById(
-          "pin"
-        ).value = "";
+        pinInput.value = "";
 
         document.getElementById(
           "message"
@@ -408,9 +489,7 @@
       ).textContent =
         "Selecciona Entrada o Salida.";
 
-      document.getElementById(
-        "pin"
-      ).value = "";
+      pinInput.value = "";
 
     };
 
