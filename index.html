@@ -990,6 +990,13 @@
       document.getElementById("message").textContent =
         "Selecciona Entrada o Salida.";
       pinInput.value = "";
+
+      if (window.pendingAppUpdate) {
+        window.pendingAppUpdate = false;
+        window.location.replace(
+          window.location.pathname + "?v=" + Date.now()
+        );
+      }
     }
 
     document.getElementById("logout").onclick = resetToLogin;
@@ -1022,6 +1029,52 @@
     updateLoginClock();
     setInterval(updateLoginClock, 1000);
 
+
+
+    // =====================================
+    // ACTUALIZACIÓN REMOTA DE LA APP
+    // =====================================
+    const APP_VERSION = "2026.09.22.02";
+    let updateCheckBusy = false;
+
+    async function checkForRemoteUpdate() {
+      if (updateCheckBusy) return;
+      updateCheckBusy = true;
+
+      try {
+        const res = await fetch(
+          "app-version.json?ts=" + Date.now(),
+          { cache: "no-store" }
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+
+        if (
+          data &&
+          data.version &&
+          data.version !== APP_VERSION
+        ) {
+          // No interrumpir a un empleado que ya inició sesión.
+          if (!employee) {
+            window.location.replace(
+              window.location.pathname + "?v=" + encodeURIComponent(data.version)
+            );
+          } else {
+            window.pendingAppUpdate = true;
+          }
+        }
+      } catch (e) {
+        // Si no se puede consultar la versión, la app continúa funcionando normalmente.
+      } finally {
+        updateCheckBusy = false;
+      }
+    }
+
+    // Comprueba si existe una versión nueva cada 30 segundos.
+    checkForRemoteUpdate();
+    setInterval(checkForRemoteUpdate, 30000);
 
     // =====================================
     // INICIAR PRUEBA DE CONEXIÓN
