@@ -1053,6 +1053,23 @@ async function loadDashboardSummary(){
   }
 
   $("dashEmployees").textContent=employees.filter(e=>e.active).length;
+
+  // Actualizar el contador de empleados que están trabajando ahora.
+  try{
+    const entries=await api("time_entries?select=employee_id,action,recorded_at&order=recorded_at.desc&limit=500");
+    const latest=new Map();
+    for(const entry of (entries||[])){
+      if(!latest.has(String(entry.employee_id))){
+        latest.set(String(entry.employee_id),entry);
+      }
+    }
+    const workingCount=employees.filter(emp=>
+      emp.active && latest.get(String(emp.id))?.action==="Entrada"
+    ).length;
+    $("dashWorking").textContent=String(workingCount);
+  }catch(e){
+    $("dashWorking").textContent="0";
+  }
 }
 
 
