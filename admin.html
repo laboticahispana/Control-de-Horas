@@ -14,8 +14,9 @@
 body{
   margin:0;
   font-family:system-ui,-apple-system,Segoe UI,sans-serif;
-  background:#f4f6f8;
-  color:#172033;
+  background:linear-gradient(180deg,#07131b 0%,#0d1c24 100%);
+  color:#f8fafc;
+  min-height:100vh;
 }
 
 .wrap{
@@ -25,11 +26,12 @@ body{
 }
 
 .card{
-  background:white;
+  background:#10212a;
+  border:1px solid rgba(255,255,255,.09);
   border-radius:18px;
   padding:22px;
   margin-bottom:18px;
-  box-shadow:0 5px 22px #0001;
+  box-shadow:0 10px 30px rgba(0,0,0,.22);
 }
 
 h1{
@@ -46,7 +48,7 @@ h3{
 }
 
 .muted{
-  color:#667085;
+  color:#aebbc5;
 }
 
 input,
@@ -55,15 +57,17 @@ select{
   width:100%;
   padding:13px;
   border-radius:10px;
-  border:1px solid #ccd3db;
+  border:1px solid #38505d;
+  background:#142630;
+  color:#f8fafc;
   font:inherit;
 }
 
 button{
-  background:#14532d;
-  color:white;
+  background:#00c96b;
+  color:#06120d;
   border:0;
-  font-weight:700;
+  font-weight:800;
   cursor:pointer;
 }
 
@@ -73,7 +77,7 @@ button:disabled{
 }
 
 button.secondary{
-  background:#334155;
+  background:#263b47;
 }
 
 button.danger{
@@ -110,8 +114,9 @@ button.small{
 .status{
   padding:12px;
   border-radius:10px;
-  background:#eef2f6;
+  background:#172a34;
   margin-top:12px;
+  color:#d7e0e5;
 }
 
 .summary{
@@ -122,7 +127,8 @@ button.small{
 }
 
 .summary-box{
-  background:#f1f5f9;
+  background:#172a34;
+  border:1px solid rgba(255,255,255,.07);
   border-radius:14px;
   padding:16px;
 }
@@ -152,7 +158,8 @@ td{
 }
 
 th{
-  background:#f1f5f9;
+  background:#172a34;
+  color:#f8fafc;
 }
 
 .hidden{
@@ -290,6 +297,13 @@ label{
   }
 }
 
+
+.working-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.working-person{background:#142a34;border:1px solid rgba(0,201,107,.22);border-radius:16px;padding:18px}
+.working-person .name{font-size:20px;font-weight:800;margin-bottom:8px}
+.working-person .time{font-size:14px;color:#aebbc5}
+.working-person .elapsed{font-size:28px;font-weight:800;margin-top:8px;color:#00e676}
+@media(max-width:700px){.working-grid{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -336,7 +350,11 @@ label{
     <!-- ENCABEZADO -->
     <div class="card no-print" id="adminHeader">
 
-      <h1>Panel de administrador</h1>
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <img src="laboticahispana-logo.png" alt="La Botica Hispana" style="width:170px;height:82px;object-fit:contain">
+        <div><h1>Panel de administrador</h1>
+        <div class="muted">La Botica Hispana · Control de Horas</div></div>
+      </div>
 
       <div class="muted">
         Gestiona empleados y revisa las horas trabajadas.
@@ -362,6 +380,7 @@ label{
 
     <div class="admin-nav no-print" id="adminNav">
       <button type="button" data-section="dashboard" class="active">🏠 Inicio</button>
+      <button type="button" data-section="workingSection">🟢 Trabajando</button>
       <button type="button" data-section="employeesSection">👥 Empleados</button>
       <button type="button" data-section="reportsSection">📊 Reportes</button>
       <button type="button" data-section="correctionsSection">🕐 Correcciones</button>
@@ -372,9 +391,25 @@ label{
       <h2>Panel de administración</h2>
       <div class="muted">Selecciona una sección para administrar La Botica Hispana.</div>
       <div class="quick-actions">
+        <button type="button" data-section="workingSection">🟢 Ver quién está trabajando</button>
         <button type="button" data-section="employeesSection">👥 Gestionar empleados</button>
         <button type="button" data-section="reportsSection">📊 Ver reportes</button>
         <button type="button" data-section="correctionsSection">🕐 Corregir horas</button>
+      </div>
+    </div>
+
+
+    <div class="admin-section" id="workingSection">
+      <div class="card no-print">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div>
+            <h2 style="margin-bottom:5px">🟢 Empleados trabajando</h2>
+            <div class="muted">Muestra quién tiene una Entrada activa en este momento.</div>
+          </div>
+          <button id="refreshWorkingBtn" class="small">Actualizar</button>
+        </div>
+        <div id="workingStatus" class="status">Cargando...</div>
+        <div id="workingEmployees" class="working-grid"></div>
       </div>
     </div>
 
@@ -654,8 +689,11 @@ function showAdminSection(sectionId){
     button.classList.toggle("active", button.dataset.section===sectionId);
   });
 
+  if(sectionId==="workingSection") loadWorkingEmployees();
   window.scrollTo({top:0,behavior:"smooth"});
 }
+
+setInterval(()=>{ if(!$("app").classList.contains("hidden")) loadWorkingEmployees(); },30000);
 
 document.querySelectorAll("[data-section]").forEach(button=>{
   button.addEventListener("click",()=>{
@@ -780,6 +818,7 @@ $("loginBtn").onclick = ()=>{
 
     loadEmployees();
     showAdminSection("dashboardSection");
+    loadWorkingEmployees();
 
   }else{
 
@@ -803,6 +842,46 @@ $("logoutBtn").onclick = ()=>{
 
 };
 
+
+
+async function loadWorkingEmployees(){
+  const status=$("workingStatus");
+  const container=$("workingEmployees");
+  if(!status||!container) return;
+  status.textContent="Actualizando...";
+  try{
+    const entries=await api("time_entries?select=employee_id,action,recorded_at&order=recorded_at.desc&limit=500");
+    const latest=new Map();
+    for(const entry of (entries||[])){
+      if(!latest.has(String(entry.employee_id))) latest.set(String(entry.employee_id),entry);
+    }
+    const working=employees.filter(emp=>emp.active && latest.get(String(emp.id))?.action==="Entrada")
+      .map(emp=>({emp,entry:latest.get(String(emp.id))}));
+    if(!working.length){
+      status.textContent="No hay empleados marcados como trabajando en este momento.";
+      container.innerHTML="";
+      return;
+    }
+    status.textContent=working.length===1 ? "1 empleado trabajando ahora." : working.length+" empleados trabajando ahora.";
+    container.innerHTML=working.map(({emp,entry})=>{
+      const started=new Date(entry.recorded_at);
+      const mins=Math.max(0,Math.floor((Date.now()-started.getTime())/60000));
+      const hrs=Math.floor(mins/60);
+      const min=String(mins%60).padStart(2,"0");
+      return `<div class="working-person">
+        <div class="name">🟢 ${escapeHtml(emp.name)}</div>
+        <div class="time">Entrada: ${formatNYTime(entry.recorded_at)}</div>
+        <div class="elapsed">${hrs}h ${min}m</div>
+        <div class="time">Tarifa: ${formatMoney(emp.hourly_rate)}/h</div>
+      </div>`;
+    }).join("");
+  }catch(e){
+    status.textContent="Error al consultar empleados trabajando: "+e.message;
+    container.innerHTML="";
+  }
+}
+
+$("refreshWorkingBtn").onclick=loadWorkingEmployees;
 
 /* EMPLEADOS */
 
