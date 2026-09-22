@@ -2437,12 +2437,21 @@ loadEmployees();
       $("correctionMessage").textContent = "Completa todos los campos.";
       return;
     }
-    const recordedAt = new Date(date+"T"+time+":00").toISOString();
+    // La hora que se escribe aquí es hora de Nueva York, no la zona
+    // horaria del dispositivo del administrador.
+    const offset = timezoneOffsetForNewYork(new Date(date+"T12:00:00"));
+    const recordedAt = new Date(date+"T"+time+":00"+offset).toISOString();
     const body = {employee_id:Number(employeeId), action, recorded_at:recordedAt};
     try{
       $("saveCorrectionBtn").disabled = true;
       if(correctionEditingId !== null){
-        await api("time_entries?id=eq."+encodeURIComponent(correctionEditingId),{method:"PATCH",body:JSON.stringify(body)});
+        const updated = await api(
+          "time_entries?id=eq."+encodeURIComponent(correctionEditingId),
+          {method:"PATCH",body:JSON.stringify(body)}
+        );
+        if(!updated.length || String(updated[0].id) !== String(correctionEditingId)){
+          throw new Error("Supabase no confirmó la actualización del registro.");
+        }
         $("correctionMessage").textContent = "Registro actualizado correctamente.";
       }else{
         // Si ya existe una Entrada o Salida para ese empleado y día,
