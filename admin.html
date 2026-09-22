@@ -336,6 +336,33 @@ label{
 .status-dot{display:inline-flex;align-items:center;gap:7px}.status-dot::before{content:"";width:9px;height:9px;border-radius:50%;background:#8a9aa4}.status-dot.working::before{background:#00d477;box-shadow:0 0 9px #00d477}
 @media(max-width:900px){.wrap{display:block}.admin-sidebar{width:auto;min-width:0;min-height:auto;position:relative;top:auto;margin-bottom:14px}.sidebar-brand{border-bottom:0;padding-bottom:8px}.sidebar-title,.sidebar-spacer,.sidebar-logout{display:none}.admin-sidebar{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:8px}.sidebar-brand{grid-column:1/-1}.admin-sidebar button{justify-content:center;text-align:center;flex-direction:column;gap:3px;padding:8px;font-size:12px}.admin-sidebar button span{font-size:11px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.metric-grid{grid-template-columns:1fr 1fr}.metric-card{min-height:110px;padding:14px}.metric-value{font-size:24px}.admin-topbar h1{font-size:24px}.activity-table{min-width:520px}}
+ 
+/* LOGIN RESPONSIVE */
+.wrap:has(#loginCard:not(.hidden)){
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  max-width:none;
+  padding:24px;
+}
+#loginCard{
+  width:min(430px,100%);
+  margin:0 auto;
+  padding:30px;
+}
+#loginCard h1{font-size:30px}
+#loginCard .status:empty{display:none}
+#loginCard .status.error{background:#3a1518;color:#ffd7da;border-color:rgba(255,80,90,.35)}
+#loginCard .status{
+  border:1px solid rgba(255,255,255,.08);
+  background:#172a34;
+  color:#f8fafc;
+  font-weight:700;
+}
+@media(max-width:700px){
+  .wrap:has(#loginCard:not(.hidden)){padding:16px}
+  #loginCard{padding:24px}
+}
 </style>
 </head>
 
@@ -477,19 +504,6 @@ label{
 
       <!-- CONTENIDO RESTANTE -->
 
-
-      <div class="card no-print">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-          <div>
-            <h2 style="margin-bottom:5px">🟢 Empleados trabajando</h2>
-            <div class="muted">Muestra quién tiene una Entrada activa en este momento.</div>
-          </div>
-          <button id="refreshWorkingBtn" class="small">Actualizar</button>
-        </div>
-        <div id="workingStatus" class="status">Cargando...</div>
-        <div id="workingEmployees" class="working-grid"></div>
-      </div>
-    </div>
 
       <div class="admin-section" id="activitySection">
         <div class="card no-print">
@@ -817,7 +831,9 @@ document.querySelectorAll("[data-section]").forEach(button=>{
 
 
 function showMsg(id,text){
-  $(id).textContent = text;
+  const el=$(id);
+  el.textContent = text;
+  el.classList.toggle("error",!!text);
 }
 
 
@@ -958,15 +974,32 @@ async function loadDashboardSummary(){
   const date=new Date();
   const dateText=localDateString(date);
   if($("dashboardDate")) $("dashboardDate").textContent=dateText;
+
   try{
-    const rows=await api("rpc/get_hours_report",{method:"POST",body:JSON.stringify({p_start:localStartOfDay(date),p_end:localEndOfDay(date)})});
+    const rows=await api("rpc/get_hours_report",{
+      method:"POST",
+      body:JSON.stringify({
+        p_start:localStartOfDay(date),
+        p_end:localEndOfDay(date)
+      })
+    });
+
     let totalHours=0,totalPay=0;
-    (rows||[]).forEach(row=>{const h=Number(row.total_hours||0), r=Number(row.hourly_rate||0); totalHours+=h; totalPay+=h*r;});
+    (rows||[]).forEach(row=>{
+      const h=Number(row.total_hours||0);
+      const r=Number(row.hourly_rate||0);
+      totalHours+=h;
+      totalPay+=h*r;
+    });
+
     $("dashHours").textContent=formatHours(totalHours);
     $("dashPay").textContent=formatMoney(totalPay);
-  }catch(e){}
+  }catch(e){
+    $("dashHours").textContent="0.00";
+    $("dashPay").textContent="$0.00";
+  }
+
   $("dashEmployees").textContent=employees.filter(e=>e.active).length;
-  }catch(e){}
 }
 
 
