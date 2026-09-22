@@ -334,7 +334,7 @@ label{
 .activity-table th{background:#162d37}
 .activity-table td{color:#dbe5e9}
 .status-dot{display:inline-flex;align-items:center;gap:7px}.status-dot::before{content:"";width:9px;height:9px;border-radius:50%;background:#8a9aa4}.status-dot.working::before{background:#00d477;box-shadow:0 0 9px #00d477}
-@media(max-width:900px){.wrap{display:block}.admin-sidebar{width:auto;min-width:0;min-height:auto;position:relative;top:auto;margin-bottom:14px}.sidebar-brand{border-bottom:0;padding-bottom:8px}.sidebar-title,.sidebar-spacer,.sidebar-logout{display:none}.admin-sidebar{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:8px}.sidebar-brand{grid-column:1/-1}.admin-sidebar button{justify-content:center;text-align:center;flex-direction:column;gap:3px;padding:8px;font-size:12px}.admin-sidebar button span{font-size:11px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.wrap{display:block}.admin-sidebar{width:auto;min-width:0;min-height:auto;position:relative;top:auto;margin-bottom:14px}.sidebar-brand{border-bottom:0;padding-bottom:8px}.sidebar-title,.sidebar-spacer,.sidebar-logout{display:none}.admin-sidebar{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:8px}.sidebar-brand{grid-column:1/-1}.admin-sidebar button{justify-content:center;text-align:center;flex-direction:column;gap:3px;padding:8px;font-size:12px}.admin-sidebar button span{font-size:11px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:520px){.metric-grid{grid-template-columns:1fr 1fr}.metric-card{min-height:110px;padding:14px}.metric-value{font-size:24px}.admin-topbar h1{font-size:24px}.activity-table{min-width:520px}}
 </style>
 </head>
@@ -417,6 +417,7 @@ label{
       <div class="sidebar-title">ADMINISTRACIÓN</div>
       <button type="button" data-section="dashboard" class="active">⌂ <span>Inicio</span></button>
       <button type="button" data-section="workingSection">● <span>Trabajando</span></button>
+      <button type="button" data-section="activitySection">◉ <span>Actividad</span></button>
       <button type="button" data-section="employeesSection">♟ <span>Empleados</span></button>
       <button type="button" data-section="reportsSection">◷ <span>Reportes</span></button>
       <button type="button" data-section="correctionsSection">✎ <span>Correcciones</span></button>
@@ -458,21 +459,6 @@ label{
           </button>
         </div>
 
-        <div class="dashboard-panel">
-          <div class="panel-heading">
-            <div>
-              <h2>Actividad en tiempo real</h2>
-              <div class="muted">Estado actual de los empleados</div>
-            </div>
-            <span id="dashUpdated" class="muted">Actualizando...</span>
-          </div>
-          <div class="table-wrap">
-            <table class="activity-table">
-              <thead><tr><th>Empleado</th><th>Estado</th><th>Entrada</th><th>Tiempo</th></tr></thead>
-              <tbody id="dashboardActivity"></tbody>
-            </table>
-          </div>
-        </div>
       </div>
 
       <div class="admin-section" id="workingSection">
@@ -504,6 +490,25 @@ label{
         <div id="workingEmployees" class="working-grid"></div>
       </div>
     </div>
+
+      <div class="admin-section" id="activitySection">
+        <div class="card no-print">
+          <div class="panel-heading">
+            <div>
+              <h2>◉ Actividad en tiempo real</h2>
+              <div class="muted">Consulta el estado actual de todos los empleados.</div>
+            </div>
+            <button id="refreshActivityBtn" class="small">↻ Actualizar</button>
+          </div>
+          <div id="activityStatus" class="status">Cargando actividad...</div>
+          <div class="table-wrap">
+            <table class="activity-table">
+              <thead><tr><th>Empleado</th><th>Estado</th><th>Entrada</th><th>Tiempo</th></tr></thead>
+              <tbody id="dashboardActivity"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
 
     <!-- AGREGAR / EDITAR EMPLEADO -->
     <div class="admin-section" id="employeesSection">
@@ -784,11 +789,19 @@ function showAdminSection(sectionId){
   });
 
   if(sectionId==="workingSection") loadWorkingEmployees();
+  if(sectionId==="activitySection") loadRealtimeActivity();
   if(sectionId==="dashboardSection") loadDashboardSummary();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
-setInterval(()=>{ if(!$("app").classList.contains("hidden")) { loadWorkingEmployees(); loadDashboardSummary(); } },30000);
+setInterval(()=>{
+  if(!$("app").classList.contains("hidden")){
+    loadWorkingEmployees();
+    loadDashboardSummary();
+    const activity=document.getElementById("activitySection");
+    if(activity && activity.classList.contains("active")) loadRealtimeActivity();
+  }
+},30000);
 
 document.querySelectorAll("[data-section]").forEach(button=>{
   button.addEventListener("click",()=>{
@@ -953,14 +966,20 @@ async function loadDashboardSummary(){
     $("dashPay").textContent=formatMoney(totalPay);
   }catch(e){}
   $("dashEmployees").textContent=employees.filter(e=>e.active).length;
+  }catch(e){}
+}
+
+
+async function loadRealtimeActivity(){
+  const status=$("activityStatus"), body=$("dashboardActivity");
+  if(!status||!body) return;
+  status.textContent="Actualizando...";
   try{
     const entries=await api("time_entries?select=employee_id,action,recorded_at&order=recorded_at.desc&limit=500");
     const latest=new Map();
     for(const entry of (entries||[])) if(!latest.has(String(entry.employee_id))) latest.set(String(entry.employee_id),entry);
     const active=employees.filter(e=>e.active);
-    const working=active.filter(e=>latest.get(String(e.id))?.action==="Entrada");
-    $("dashWorking").textContent=working.length;
-    $("dashboardActivity").innerHTML=active.map(emp=>{
+    body.innerHTML=active.map(emp=>{
       const last=latest.get(String(emp.id));
       const isWorking=last?.action==="Entrada";
       let time="—", elapsed="—";
@@ -973,8 +992,11 @@ async function loadDashboardSummary(){
       }
       return `<tr><td><strong>${escapeHtml(emp.name)}</strong></td><td><span class="status-dot ${isWorking?"working":""}">${isWorking?"Trabajando":"No está trabajando"}</span></td><td>${time}</td><td>${elapsed}</td></tr>`;
     }).join("");
-    $("dashUpdated").textContent="Actualizado "+new Date().toLocaleTimeString("es-US",{hour:"numeric",minute:"2-digit"});
-  }catch(e){ $("dashUpdated").textContent="No se pudo actualizar"; }
+    status.textContent=active.length ? "Estado actualizado correctamente." : "No hay empleados activos.";
+    if($("dashUpdated")) $("dashUpdated").textContent="Actualizado "+new Date().toLocaleTimeString("es-US",{hour:"numeric",minute:"2-digit"});
+  }catch(e){
+    status.textContent="No se pudo actualizar: "+e.message;
+  }
 }
 
 async function loadWorkingEmployees(){
@@ -1298,6 +1320,7 @@ function clearForm(){
 $("cancelBtn").onclick = clearForm;
 
 $("refreshBtn").onclick = loadEmployees;
+if($("refreshActivityBtn")) $("refreshActivityBtn").onclick = loadRealtimeActivity;
 if($("sidebarLogout")) $("sidebarLogout").onclick = () => $("logoutBtn").click();
 
 
