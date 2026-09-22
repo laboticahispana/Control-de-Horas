@@ -304,6 +304,38 @@ label{
 .working-person .time{font-size:14px;color:#aebbc5}
 .working-person .elapsed{font-size:28px;font-weight:800;margin-top:8px;color:#00e676}
 @media(max-width:700px){.working-grid{grid-template-columns:1fr}}
+ 
+.wrap{max-width:1400px;padding:18px;display:flex;gap:18px;align-items:flex-start}
+.admin-sidebar{width:235px;min-width:235px;min-height:calc(100vh - 36px);background:#0c1a22;border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:18px;display:flex;flex-direction:column;position:sticky;top:18px}
+.sidebar-brand{display:flex;justify-content:center;padding:4px 4px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-brand img{width:170px;height:92px;object-fit:contain}
+.sidebar-title{font-size:11px;letter-spacing:1.5px;color:#71818c;font-weight:800;margin:20px 8px 8px}
+.admin-sidebar button{background:transparent!important;color:#aebbc5!important;text-align:left;border:0!important;display:flex;align-items:center;gap:12px;margin:3px 0;padding:13px 14px;border-radius:12px;font-weight:700}
+.admin-sidebar button.active{background:#17352c!important;color:#fff!important;box-shadow:inset 3px 0 #00d477}
+.admin-sidebar button:hover{background:#142a34!important;color:#fff!important}
+.admin-sidebar .sidebar-logout{margin-top:auto}
+.sidebar-spacer{flex:1;min-height:30px}
+.admin-main{flex:1;min-width:0}
+.admin-topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 16px;padding:8px 4px}
+.eyebrow{font-size:11px;letter-spacing:1.8px;font-weight:800;color:#00d477}
+.admin-topbar h1{font-size:30px;margin:2px 0}
+.dashboard-card-modern{display:block}
+.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.metric-card{min-height:132px;text-align:left;background:#12262f!important;color:#f8fafc!important;border:1px solid rgba(255,255,255,.08)!important;border-radius:18px;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;box-shadow:0 10px 25px rgba(0,0,0,.15)}
+.metric-card.metric-green{background:linear-gradient(145deg,#087a4b,#00a85b)!important}
+.metric-icon{font-size:20px;opacity:.9}
+.metric-value{font-size:30px;font-weight:900;line-height:1.05}
+.metric-label{font-size:13px;color:#b7c5cc}
+.metric-green .metric-label{color:#e0fff0}
+.dashboard-panel{background:#10212a;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.panel-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.panel-heading h2{margin:0 0 3px}
+.activity-table th,.activity-table td{border-bottom:1px solid rgba(255,255,255,.08)}
+.activity-table th{background:#162d37}
+.activity-table td{color:#dbe5e9}
+.status-dot{display:inline-flex;align-items:center;gap:7px}.status-dot::before{content:"";width:9px;height:9px;border-radius:50%;background:#8a9aa4}.status-dot.working::before{background:#00d477;box-shadow:0 0 9px #00d477}
+@media(max-width:900px){.wrap{display:block}.admin-sidebar{width:auto;min-width:0;min-height:auto;position:relative;top:auto;margin-bottom:14px}.sidebar-brand{border-bottom:0;padding-bottom:8px}.sidebar-title,.sidebar-spacer,.sidebar-logout{display:none}.admin-sidebar{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:8px}.sidebar-brand{grid-column:1/-1}.admin-sidebar button{justify-content:center;text-align:center;flex-direction:column;gap:3px;padding:8px;font-size:12px}.admin-sidebar button span{font-size:11px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.metric-grid{grid-template-columns:1fr 1fr}.metric-card{min-height:110px;padding:14px}.metric-value{font-size:24px}.admin-topbar h1{font-size:24px}.activity-table{min-width:520px}}
 </style>
 </head>
 
@@ -378,28 +410,88 @@ label{
 
 
 
-    <div class="admin-nav no-print" id="adminNav">
-      <button type="button" data-section="dashboard" class="active">🏠 Inicio</button>
-      <button type="button" data-section="workingSection">🟢 Trabajando</button>
-      <button type="button" data-section="employeesSection">👥 Empleados</button>
-      <button type="button" data-section="reportsSection">📊 Reportes</button>
-      <button type="button" data-section="correctionsSection">🕐 Correcciones</button>
-    </div>
-
-    <div class="card dashboard-card no-print admin-section active" id="dashboardSection">
-      <div class="dashboard-icon">✓</div>
-      <h2>Panel de administración</h2>
-      <div class="muted">Selecciona una sección para administrar La Botica Hispana.</div>
-      <div class="quick-actions">
-        <button type="button" data-section="workingSection">🟢 Ver quién está trabajando</button>
-        <button type="button" data-section="employeesSection">👥 Gestionar empleados</button>
-        <button type="button" data-section="reportsSection">📊 Ver reportes</button>
-        <button type="button" data-section="correctionsSection">🕐 Corregir horas</button>
+    <aside class="admin-sidebar no-print" id="adminNav">
+      <div class="sidebar-brand">
+        <img src="laboticahispana-logo.png" alt="La Botica Hispana">
       </div>
-    </div>
+      <div class="sidebar-title">ADMINISTRACIÓN</div>
+      <button type="button" data-section="dashboard" class="active">⌂ <span>Inicio</span></button>
+      <button type="button" data-section="workingSection">● <span>Trabajando</span></button>
+      <button type="button" data-section="employeesSection">♟ <span>Empleados</span></button>
+      <button type="button" data-section="reportsSection">◷ <span>Reportes</span></button>
+      <button type="button" data-section="correctionsSection">✎ <span>Correcciones</span></button>
+      <div class="sidebar-spacer"></div>
+      <button type="button" id="sidebarLogout" class="sidebar-logout">↪ <span>Cerrar sesión</span></button>
+    </aside>
+
+    <div class="admin-main">
+      <div class="admin-topbar no-print">
+        <div>
+          <div class="eyebrow">LA BOTICA HISPANA</div>
+          <h1>Resumen de hoy</h1>
+          <div id="dashboardDate" class="muted"></div>
+        </div>
+        <button id="dashboardRefresh" class="small">↻ Actualizar</button>
+      </div>
+
+      <div class="dashboard-card-modern admin-section active" id="dashboardSection">
+        <div class="metric-grid">
+          <button class="metric-card metric-green" type="button" data-section="workingSection">
+            <span class="metric-icon">●</span>
+            <span class="metric-value" id="dashWorking">0</span>
+            <span class="metric-label">Trabajando ahora</span>
+          </button>
+          <button class="metric-card" type="button" data-section="employeesSection">
+            <span class="metric-icon">♟</span>
+            <span class="metric-value" id="dashEmployees">0</span>
+            <span class="metric-label">Empleados activos</span>
+          </button>
+          <button class="metric-card" type="button" data-section="reportsSection">
+            <span class="metric-icon">◷</span>
+            <span class="metric-value" id="dashHours">0.00</span>
+            <span class="metric-label">Horas de hoy</span>
+          </button>
+          <button class="metric-card" type="button" data-section="reportsSection">
+            <span class="metric-icon">$</span>
+            <span class="metric-value" id="dashPay">$0.00</span>
+            <span class="metric-label">Pago estimado hoy</span>
+          </button>
+        </div>
+
+        <div class="dashboard-panel">
+          <div class="panel-heading">
+            <div>
+              <h2>Actividad en tiempo real</h2>
+              <div class="muted">Estado actual de los empleados</div>
+            </div>
+            <span id="dashUpdated" class="muted">Actualizando...</span>
+          </div>
+          <div class="table-wrap">
+            <table class="activity-table">
+              <thead><tr><th>Empleado</th><th>Estado</th><th>Entrada</th><th>Tiempo</th></tr></thead>
+              <tbody id="dashboardActivity"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section" id="workingSection">
+        <div class="card no-print">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <h2 style="margin-bottom:5px">🟢 Empleados trabajando</h2>
+              <div class="muted">Muestra quién tiene una Entrada activa en este momento.</div>
+            </div>
+            <button id="refreshWorkingBtn" class="small">Actualizar</button>
+          </div>
+          <div id="workingStatus" class="status">Cargando...</div>
+          <div id="workingEmployees" class="working-grid"></div>
+        </div>
+      </div>
+
+      <!-- CONTENIDO RESTANTE -->
 
 
-    <div class="admin-section" id="workingSection">
       <div class="card no-print">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
           <div>
@@ -648,6 +740,8 @@ label{
     </div>
     </div>
 
+    </div><!-- admin-main -->
+
   </div>
 
 </div>
@@ -690,10 +784,11 @@ function showAdminSection(sectionId){
   });
 
   if(sectionId==="workingSection") loadWorkingEmployees();
+  if(sectionId==="dashboardSection") loadDashboardSummary();
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
-setInterval(()=>{ if(!$("app").classList.contains("hidden")) loadWorkingEmployees(); },30000);
+setInterval(()=>{ if(!$("app").classList.contains("hidden")) { loadWorkingEmployees(); loadDashboardSummary(); } },30000);
 
 document.querySelectorAll("[data-section]").forEach(button=>{
   button.addEventListener("click",()=>{
@@ -819,6 +914,7 @@ $("loginBtn").onclick = ()=>{
     loadEmployees();
     showAdminSection("dashboardSection");
     loadWorkingEmployees();
+    loadDashboardSummary();
 
   }else{
 
@@ -843,6 +939,43 @@ $("logoutBtn").onclick = ()=>{
 };
 
 
+
+ 
+async function loadDashboardSummary(){
+  const date=new Date();
+  const dateText=localDateString(date);
+  if($("dashboardDate")) $("dashboardDate").textContent=dateText;
+  try{
+    const rows=await api("rpc/get_hours_report",{method:"POST",body:JSON.stringify({p_start:localStartOfDay(date),p_end:localEndOfDay(date)})});
+    let totalHours=0,totalPay=0;
+    (rows||[]).forEach(row=>{const h=Number(row.total_hours||0), r=Number(row.hourly_rate||0); totalHours+=h; totalPay+=h*r;});
+    $("dashHours").textContent=formatHours(totalHours);
+    $("dashPay").textContent=formatMoney(totalPay);
+  }catch(e){}
+  $("dashEmployees").textContent=employees.filter(e=>e.active).length;
+  try{
+    const entries=await api("time_entries?select=employee_id,action,recorded_at&order=recorded_at.desc&limit=500");
+    const latest=new Map();
+    for(const entry of (entries||[])) if(!latest.has(String(entry.employee_id))) latest.set(String(entry.employee_id),entry);
+    const active=employees.filter(e=>e.active);
+    const working=active.filter(e=>latest.get(String(e.id))?.action==="Entrada");
+    $("dashWorking").textContent=working.length;
+    $("dashboardActivity").innerHTML=active.map(emp=>{
+      const last=latest.get(String(emp.id));
+      const isWorking=last?.action==="Entrada";
+      let time="—", elapsed="—";
+      if(last?.recorded_at){
+        time=formatNYTime(last.recorded_at);
+        if(isWorking){
+          const mins=Math.max(0,Math.floor((Date.now()-new Date(last.recorded_at).getTime())/60000));
+          elapsed=Math.floor(mins/60)+"h "+String(mins%60).padStart(2,"0")+"m";
+        }
+      }
+      return `<tr><td><strong>${escapeHtml(emp.name)}</strong></td><td><span class="status-dot ${isWorking?"working":""}">${isWorking?"Trabajando":"No está trabajando"}</span></td><td>${time}</td><td>${elapsed}</td></tr>`;
+    }).join("");
+    $("dashUpdated").textContent="Actualizado "+new Date().toLocaleTimeString("es-US",{hour:"numeric",minute:"2-digit"});
+  }catch(e){ $("dashUpdated").textContent="No se pudo actualizar"; }
+}
 
 async function loadWorkingEmployees(){
   const status=$("workingStatus");
@@ -1165,6 +1298,7 @@ function clearForm(){
 $("cancelBtn").onclick = clearForm;
 
 $("refreshBtn").onclick = loadEmployees;
+if($("sidebarLogout")) $("sidebarLogout").onclick = () => $("logoutBtn").click();
 
 
 /* REPORTES */
