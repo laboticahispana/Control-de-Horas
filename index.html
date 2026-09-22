@@ -408,6 +408,13 @@
       .success-screen .time { font-size: 37px; }
     }
 
+
+    /* Evita que una pantalla marcada como hidden siga ocupando espacio
+       cuando la vista horizontal usa display:grid. */
+    [hidden] {
+      display: none !important;
+    }
+
     /* =====================================================
        VISTA HORIZONTAL — TABLET / PC
        La vista vertical existente no se modifica.
