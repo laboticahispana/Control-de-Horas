@@ -93,6 +93,137 @@
       background: #14532d;
     }
 
+    .screen {
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .brand-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: .5px;
+      margin: 0;
+    }
+
+    .brand-subtitle {
+      margin-top: 4px;
+      color: #667085;
+      font-size: 14px;
+    }
+
+    .employee-head {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .employee-head h2 {
+      margin: 6px 0 4px;
+      font-size: 27px;
+    }
+
+    .employee-head p {
+      margin: 0;
+      color: #667085;
+    }
+
+    .action-buttons {
+      display: grid;
+      gap: 12px;
+    }
+
+    .action-btn {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 14px;
+      text-align: left;
+      padding: 14px 18px;
+      border-radius: 16px;
+      font-size: 18px;
+    }
+
+    .action-btn .icon {
+      font-size: 30px;
+      width: 40px;
+      text-align: center;
+    }
+
+    .action-btn .label small {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: .85;
+      margin-top: 3px;
+    }
+
+    .action-btn.entry {
+      background: #16a34a;
+    }
+
+    .action-btn.exit {
+      background: #dc2626;
+    }
+
+    .success-screen {
+      text-align: center;
+      padding: 18px 8px 8px;
+    }
+
+    .success-icon {
+      width: 92px;
+      height: 92px;
+      margin: 4px auto 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #16a34a;
+      color: white;
+      font-size: 54px;
+      font-weight: 800;
+      box-shadow: 0 10px 28px #16a34a44;
+    }
+
+    .success-screen h2 {
+      font-size: 30px;
+      margin: 0 0 10px;
+    }
+
+    .success-screen .date {
+      font-size: 16px;
+      color: #667085;
+      margin-bottom: 4px;
+    }
+
+    .success-screen .time {
+      font-size: 38px;
+      font-weight: 800;
+      margin-bottom: 18px;
+    }
+
+    .success-message {
+      background: #eef2f4;
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 15px;
+      margin-bottom: 14px;
+    }
+
+    .success-note {
+      color: #667085;
+      font-size: 12px;
+    }
+
+    .home-button {
+      background: #334155;
+      margin-top: 14px;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -146,13 +277,17 @@
 
   <div class="wrap">
 
-    <!-- LOGIN -->
-    <div class="card">
+    <!-- PANTALLA DE PIN -->
+    <div class="card screen" id="login-screen">
 
-      <h1>Control de Horas</h1>
+      <div class="brand">
+        <h1 class="brand-title">LA BOTICA HISPANA</h1>
+        <div class="brand-subtitle">Registro de trabajadores</div>
+      </div>
 
-      <div class="muted">
-        La Botica • Registro de trabajadores
+      <div class="muted" style="text-align:center;">
+        Bienvenido<br>
+        <strong>Ingresa tu PIN para registrar tu horario</strong>
       </div>
 
       <input
@@ -160,7 +295,7 @@
         type="password"
         inputmode="none"
         maxlength="8"
-        placeholder="Ingresa tu PIN"
+        placeholder="••••"
         readonly
         autocomplete="off"
         aria-label="PIN"
@@ -181,8 +316,8 @@
         <button type="button" class="pin-key action" id="pin-backspace">⌫</button>
       </div>
 
-      <button id="login">
-        Entrar
+      <button id="login" class="action-btn entry" style="justify-content:center;">
+        <span>✓</span> Entrar
       </button>
 
       <div id="who" class="status" hidden></div>
@@ -190,31 +325,56 @@
     </div>
 
 
-    <!-- REGISTRAR MOVIMIENTOS -->
-    <div class="card" id="actions" hidden>
+    <!-- PANTALLA ENTRADA / SALIDA -->
+    <div class="card screen" id="actions" hidden>
 
-      <h2>Registrar movimiento</h2>
+      <div class="employee-head">
+        <div class="muted">Registro de horario</div>
+        <h2 id="employee-greeting">Hola</h2>
+        <p>¿Qué deseas registrar?</p>
+      </div>
 
-      <div class="grid">
-
-        <button data-action="Entrada">
-          Entrada
+      <div class="action-buttons">
+        <button data-action="Entrada" class="action-btn entry">
+          <span class="icon">↪</span>
+          <span class="label">ENTRADA<small>Comenzar a trabajar</small></span>
         </button>
 
-        <button data-action="Salida" class="danger">
-          Salida
+        <button data-action="Salida" class="action-btn exit">
+          <span class="icon">↩</span>
+          <span class="label">SALIDA<small>Terminar jornada</small></span>
         </button>
 
         <button id="logout" class="secondary">
-          Cerrar sesión
+          ← Volver
         </button>
-
       </div>
 
       <div id="message" class="status" aria-live="polite">
-        Selecciona una acción.
+        Selecciona Entrada o Salida.
       </div>
 
+    </div>
+
+
+    <!-- PANTALLA DE CONFIRMACIÓN -->
+    <div class="card screen" id="confirmation" hidden>
+      <div class="success-screen">
+        <div class="success-icon">✓</div>
+        <h2 id="confirmation-title">¡Entrada registrada!</h2>
+        <div id="confirmation-date" class="date"></div>
+        <div id="confirmation-time" class="time"></div>
+        <div id="confirmation-message" class="success-message">
+          Que tengas un gran día 💪<br>
+          Tu esfuerzo hace la diferencia.
+        </div>
+        <div class="success-note">
+          Esta pantalla volverá automáticamente a la pantalla principal.
+        </div>
+        <button id="confirmation-home" class="home-button">
+          Volver ahora
+        </button>
+      </div>
     </div>
 
 
@@ -369,24 +529,18 @@
 
         employee = rows[0];
 
-        document.getElementById(
-          "who"
-        ).hidden = false;
+        document.getElementById("who").hidden = true;
+        document.getElementById("who").textContent = "";
 
-        document.getElementById(
-          "who"
-        ).textContent =
-          "Empleado: " + employee.name;
+        document.getElementById("employee-greeting").textContent =
+          "Hola, " + employee.name;
 
-        document.getElementById(
-          "actions"
-        ).hidden = false;
+        document.getElementById("login-screen").hidden = true;
+        document.getElementById("confirmation").hidden = true;
+        document.getElementById("actions").hidden = false;
 
         pinInput.value = "";
-
-        document.getElementById(
-          "message"
-        ).textContent =
+        document.getElementById("message").textContent =
           "Selecciona Entrada o Salida.";
 
       } catch (e) {
@@ -443,10 +597,37 @@
             return;
           }
 
-          document.getElementById(
-            "message"
-          ).textContent =
-            action + " registrado correctamente.";
+          const now = new Date();
+          const actionLabel = action === "Entrada"
+            ? "¡Entrada registrada!"
+            : "¡Salida registrada!";
+
+          document.getElementById("confirmation-title").textContent = actionLabel;
+          document.getElementById("confirmation-date").textContent =
+            now.toLocaleDateString("es-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric"
+            });
+          document.getElementById("confirmation-time").textContent =
+            now.toLocaleTimeString("es-US", {
+              hour: "numeric",
+              minute: "2-digit"
+            });
+
+          document.getElementById("confirmation-message").innerHTML =
+            action === "Entrada"
+              ? "Que tengas un gran día 💪<br>Tu esfuerzo hace la diferencia."
+              : "Gracias por tu trabajo hoy.<br>¡Nos vemos mañana!";
+
+          document.getElementById("actions").hidden = true;
+          document.getElementById("confirmation").hidden = false;
+
+          clearTimeout(window.confirmationTimer);
+          window.confirmationTimer = setTimeout(() => {
+            resetToLogin();
+          }, 5000);
 
         } catch (e) {
 
@@ -466,32 +647,23 @@
     // CERRAR SESIÓN
     // =====================================
 
-    document.getElementById(
-      "logout"
-    ).onclick = () => {
-
+    function resetToLogin() {
+      clearTimeout(window.confirmationTimer);
       employee = null;
 
-      document.getElementById(
-        "actions"
-      ).hidden = true;
-
-      document.getElementById(
-        "who"
-      ).hidden = true;
-
-      document.getElementById(
-        "who"
-      ).textContent = "";
-
-      document.getElementById(
-        "message"
-      ).textContent =
+      document.getElementById("actions").hidden = true;
+      document.getElementById("confirmation").hidden = true;
+      document.getElementById("login-screen").hidden = false;
+      document.getElementById("who").hidden = true;
+      document.getElementById("who").textContent = "";
+      document.getElementById("message").textContent =
         "Selecciona Entrada o Salida.";
-
       pinInput.value = "";
+    }
 
-    };
+    document.getElementById("logout").onclick = resetToLogin;
+
+    document.getElementById("confirmation-home").onclick = resetToLogin;
 
 
     // =====================================
