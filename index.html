@@ -353,24 +353,26 @@
 
         try {
 
-          await api(
-
-            "time_entries",
-
+          const result = await api(
+            "rpc/save_attendance_action",
             {
               method: "POST",
-
               body: JSON.stringify({
-
-                employee_id: employee.id,
-
-                action: action
-
+                p_employee_id: employee.id,
+                p_action: action
               })
-
             }
-
           );
+
+          const response = Array.isArray(result)
+            ? result[0]
+            : result;
+
+          if (!response || response.allowed !== true) {
+            document.getElementById("message").textContent =
+              response?.message || "La acción no fue permitida.";
+            return;
+          }
 
           document.getElementById(
             "message"
