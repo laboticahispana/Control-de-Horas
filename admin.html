@@ -363,6 +363,59 @@ label{
   .wrap:has(#loginCard:not(.hidden)){padding:16px}
   #loginCard{padding:24px}
 }
+
+/* ESTRUCTURA PRINCIPAL DEL ADMINISTRADOR */
+.wrap:has(#app:not(.hidden)){
+  display:block;
+  width:100%;
+  max-width:1400px;
+  padding:18px;
+}
+#app:not(.hidden){
+  display:grid;
+  grid-template-columns:235px minmax(0,1fr);
+  gap:18px;
+  width:100%;
+  align-items:start;
+}
+#app:not(.hidden) > #adminHeader{
+  display:none!important;
+}
+.admin-main{
+  width:100%;
+  min-width:0;
+}
+.admin-section{
+  width:100%;
+}
+.admin-section.active{
+  display:block;
+}
+.admin-main .card,
+.admin-main .dashboard-panel{
+  width:100%;
+}
+@media(max-width:900px){
+  .wrap:has(#app:not(.hidden)){
+    padding:12px;
+  }
+  #app:not(.hidden){
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .admin-sidebar{
+    width:100%;
+    min-width:0;
+    min-height:auto;
+    position:relative;
+    top:auto;
+    margin:0;
+  }
+  .admin-main{
+    width:100%;
+  }
+}
+
 </style>
 </head>
 
