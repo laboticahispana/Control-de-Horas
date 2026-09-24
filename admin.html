@@ -1130,7 +1130,6 @@ async function loadWorkingEmployees(){
         <div class="name">🟢 ${escapeHtml(emp.name)}</div>
         <div class="time">Entrada: ${formatNYTime(entry.recorded_at)}</div>
         <div class="elapsed">${hrs}h ${min}m</div>
-        <div class="time">Tarifa: ${formatMoney(emp.hourly_rate)}/h</div>
       </div>`;
     }).join("");
   }catch(e){
