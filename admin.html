@@ -2038,6 +2038,24 @@ loadEmployees();
       const workDate = localDateString(new Date(dayEntries[0].recorded_at));
       let pendingEntry = null;
 
+      // A veces un fallo de conexión registra una Salida unos segundos antes
+      // de la Entrada real. Si esa Entrada sí tiene una Salida posterior,
+      // no mostrar la Salida huérfana como anomalía del reporte.
+      const ignoredOrphanExits = new Set();
+      dayEntries.forEach((entry, index) => {
+        if(entry.action !== "Salida") return;
+        if(index === dayEntries.length - 1) return;
+        const next = dayEntries[index + 1];
+        if(next.action !== "Entrada") return;
+        const gap = new Date(next.recorded_at) - new Date(entry.recorded_at);
+        if(gap < 0 || gap > 60000) return;
+        const hasClosingExit = dayEntries.slice(index + 2).some(later =>
+          later.action === "Salida"
+          && new Date(later.recorded_at) > new Date(next.recorded_at)
+        );
+        if(hasClosingExit) ignoredOrphanExits.add(entry);
+      });
+
       dayEntries.forEach(entry => {
         if(entry.action === "Entrada"){
           if(pendingEntry){
@@ -2059,7 +2077,7 @@ loadEmployees();
             pendingEntry = null;
           }else if(pendingEntry){
             anomalies.push({employee_id:employeeId,work_date:workDate,type:"Salida inválida",at:entry.recorded_at});
-          }else{
+          }else if(!ignoredOrphanExits.has(entry)){
             anomalies.push({employee_id:employeeId,work_date:workDate,type:"Salida sin entrada",at:entry.recorded_at});
           }
         }
