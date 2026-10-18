@@ -416,6 +416,17 @@ label{
   }
 }
 
+
+/* NOTIFICACIONES DEL ADMINISTRADOR */
+.notification-area{position:relative;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.notification-toggle{position:relative;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.notification-badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#dc2626;color:#fff;font-size:11px;font-weight:900}
+.notification-menu{position:absolute;right:0;top:calc(100% + 10px);width:min(360px,calc(100vw - 32px));max-height:360px;overflow:auto;background:#10212a;border:1px solid #38505d;border-radius:14px;padding:12px;box-shadow:0 18px 45px rgba(0,0,0,.4);z-index:1000}
+.notification-menu h3{margin:2px 4px 10px}
+.notification-item{padding:10px;border-radius:10px;background:#172a34;margin-top:8px;border-left:3px solid #f59e0b;font-size:13px}
+.notification-empty{padding:12px;color:#aebbc5;font-size:13px}
+.notification-error{padding:12px;color:#fecaca;font-size:13px}
+@media(max-width:520px){.notification-area{gap:6px}.notification-toggle{padding:9px 10px;font-size:13px}.notification-menu{right:0}}
 </style>
 </head>
 
@@ -512,7 +523,14 @@ label{
           <h1>Resumen de hoy</h1>
           <div id="dashboardDate" class="muted"></div>
         </div>
-        <button id="dashboardRefresh" class="small">↻ Actualizar</button>
+        <div class="notification-area">
+          <button id="notificationToggle" class="small secondary notification-toggle" type="button" aria-expanded="false" aria-controls="notificationMenu">🔔 Notificaciones <span id="notificationBadge" class="notification-badge hidden">0</span></button>
+          <div id="notificationMenu" class="notification-menu hidden" role="region" aria-label="Notificaciones">
+            <h3>Notificaciones</h3>
+            <div id="notificationItems" class="notification-empty">Abre para revisar entradas sin salida.</div>
+          </div>
+          <button id="dashboardRefresh" class="small">↻ Actualizar</button>
+        </div>
       </div>
 
       <div class="dashboard-card-modern admin-section active" id="dashboardSection">
@@ -2495,6 +2513,108 @@ loadEmployees();
   $("loadCorrectionEntriesBtn").onclick = loadCorrectionEntries;
   $("cancelCorrectionBtn").onclick = clearCorrectionForm;
   $("correctionDate").value = correctionToday();
+})();
+</script>
+<script>
+(() => {
+  const toggle = document.getElementById("notificationToggle");
+  const menu = document.getElementById("notificationMenu");
+  const items = document.getElementById("notificationItems");
+  const badge = document.getElementById("notificationBadge");
+  if (!toggle || !menu || !items || !badge) return;
+
+  function escapeNotificationText(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[char]));
+  }
+
+  async function refreshNotifications() {
+    items.className = "notification-empty";
+    items.textContent = "Revisando registros...";
+    try {
+      const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const entries = await api(
+        "time_entries?select=id,employee_id,action,recorded_at"
+        + "&recorded_at=gte." + encodeURIComponent(since)
+        + "&order=recorded_at.asc"
+      );
+      const grouped = new Map();
+      (entries || []).forEach(entry => {
+        if (entry.action !== "Entrada" && entry.action !== "Salida") return;
+        const day = localDateString(new Date(entry.recorded_at));
+        const key = String(entry.employee_id) + "|" + day;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(entry);
+      });
+
+      const alerts = [];
+      const now = Date.now();
+      grouped.forEach((dayEntries, key) => {
+        dayEntries.sort((a,b) => new Date(a.recorded_at) - new Date(b.recorded_at) || Number(a.id)-Number(b.id));
+        let pending = null;
+        dayEntries.forEach(entry => {
+          if (entry.action === "Entrada") {
+            if (pending) {
+              const age = now - new Date(pending.recorded_at).getTime();
+              if (age >= 8 * 60 * 60 * 1000 || localDateString(new Date(pending.recorded_at)) !== localDateString(new Date())) {
+                alerts.push({employee_id:pending.employee_id, at:pending.recorded_at, date:localDateString(new Date(pending.recorded_at))});
+              }
+            }
+            pending = entry;
+          } else if (entry.action === "Salida" && pending) {
+            pending = null;
+          }
+        });
+        if (pending) {
+          const pendingDate = localDateString(new Date(pending.recorded_at));
+          const age = now - new Date(pending.recorded_at).getTime();
+          if (age >= 8 * 60 * 60 * 1000 || pendingDate !== localDateString(new Date())) {
+            alerts.push({employee_id:pending.employee_id, at:pending.recorded_at, date:pendingDate});
+          }
+        }
+      });
+
+      alerts.sort((a,b) => new Date(a.at) - new Date(b.at));
+      badge.textContent = String(alerts.length);
+      badge.classList.toggle("hidden", alerts.length === 0);
+      if (!alerts.length) {
+        items.className = "notification-empty";
+        items.textContent = "No hay entradas pendientes de salida.";
+        return;
+      }
+      items.className = "";
+      items.innerHTML = alerts.map(alert => {
+        const employee = (employees || []).find(emp => String(emp.id) === String(alert.employee_id));
+        const name = employee ? employee.name : "Empleado";
+        const time = new Date(alert.at).toLocaleTimeString("es-US",{hour:"2-digit",minute:"2-digit"});
+        return '<div class="notification-item"><strong>' + escapeNotificationText(name) + '</strong><br>Entrada sin salida · ' + escapeNotificationText(alert.date) + ' a las ' + escapeNotificationText(time) + '</div>';
+      }).join("");
+    } catch (error) {
+      items.className = "notification-error";
+      items.textContent = "No se pudieron cargar las notificaciones: " + (error.message || "error desconocido");
+      badge.classList.add("hidden");
+    }
+  }
+
+  toggle.addEventListener("click", async () => {
+    const opening = menu.classList.contains("hidden");
+    menu.classList.toggle("hidden", !opening);
+    toggle.setAttribute("aria-expanded", String(opening));
+    if (opening) await refreshNotifications();
+  });
+
+  document.addEventListener("click", event => {
+    if (!event.target.closest(".notification-area")) {
+      menu.classList.add("hidden");
+      toggle.setAttribute("aria-expanded", "false");
+    }
+  });
+
+  const refreshButton = document.getElementById("dashboardRefresh");
+  if (refreshButton) refreshButton.addEventListener("click", () => {
+    if (!menu.classList.contains("hidden")) refreshNotifications();
+  });
 })();
 </script>
 </body>
