@@ -2613,8 +2613,19 @@ loadEmployees();
 
   const refreshButton = document.getElementById("dashboardRefresh");
   if (refreshButton) refreshButton.addEventListener("click", () => {
-    if (!menu.classList.contains("hidden")) refreshNotifications();
+    refreshNotifications();
   });
+
+  // Al entrar al panel de administración, cargar el contador sin abrir el menú.
+  const app = document.getElementById("app");
+  if (app) {
+    const observer = new MutationObserver(() => {
+      if (!app.classList.contains("hidden")) {
+        window.setTimeout(refreshNotifications, 900);
+      }
+    });
+    observer.observe(app, {attributes:true, attributeFilter:["class"]});
+  }
 })();
 </script>
 </body>
